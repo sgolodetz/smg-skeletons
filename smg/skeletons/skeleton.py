@@ -33,7 +33,7 @@ class Skeleton:
 
             :return:    A string representation of the keypoint.
             """
-            return f"Keypoint({self.__name}, {self.__position})"
+            return f"Keypoint({repr(self.__name)}, {repr(self.__position)}, {repr(self.__score)})"
 
         # PROPERTIES
 
@@ -88,7 +88,7 @@ class Skeleton:
 
         :return:    A string representation of the skeleton.
         """
-        return f"Skeleton({self.__keypoints})"
+        return f"Skeleton({repr(self.__keypoints)}, {repr(self.__keypoint_pairs)})"
 
     # PROPERTIES
 
