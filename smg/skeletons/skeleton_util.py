@@ -40,12 +40,12 @@ class SkeletonUtil:
             min_x, min_y, min_z = min(min_x, p[0]), min(min_y, p[1]), min(min_z, p[2])
             max_x, max_y, max_z = max(max_x, p[0]), max(max_y, p[1]), max(max_z, p[2])
 
-        min_x -= 0.3
-        min_y -= 0.3
-        min_z -= 0.3
-        max_x += 0.3
-        max_y += 0.3
-        max_z += 0.3
+        min_x -= 0.5
+        min_y -= 0.5
+        min_z -= 0.5
+        max_x += 0.5
+        max_y += 0.5
+        max_z += 0.5
 
         # cx, cy, cz = (min_x + max_x) / 2, (min_y + max_y) / 2, (min_z + max_z) / 2
         # min_x, min_y, min_z = min(min_x - 0.2, cx - 0.3), min(min_y - 0.2, cy - 0.3), min(min_z - 0.2, cz - 0.3)
