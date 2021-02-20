@@ -1,6 +1,8 @@
 import numpy as np
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
+
+from smg.utility import Cylinder, Shape, Sphere
 
 
 class Skeleton:
@@ -80,6 +82,10 @@ class Skeleton:
             (i, j) for i, j in keypoint_pairs if i in self.__keypoints and j in self.__keypoints
         ]
 
+        # TODO
+        self.__bounding_shapes: List[Shape] = []
+        self.__add_bounding_shapes()
+
     # SPECIAL METHODS
 
     def __repr__(self) -> str:
@@ -100,6 +106,10 @@ class Skeleton:
         :return:    The bones of the skeleton, as a list of detected keypoint pairs.
         """
         return [(self.__keypoints[i], self.__keypoints[j]) for i, j in self.__keypoint_pairs]
+
+    @property
+    def bounding_shapes(self) -> List[Shape]:
+        return self.__bounding_shapes
 
     @property
     def keypoints(self) -> Dict[str, Keypoint]:
@@ -123,3 +133,41 @@ class Skeleton:
         """
         # noinspection PyTypeChecker
         return tuple(sorted([keypoint1.name, keypoint2.name]))
+
+    # PRIVATE METHODS
+
+    def __add_bounding_cylinder(self, keypoint_name1: str, keypoint_name2: str, radius1: float,
+                                radius2: Optional[float] = None) -> None:
+        if radius2 is None:
+            radius2 = radius1
+
+        keypoint1: Optional[Skeleton.Keypoint] = self.__keypoints.get(keypoint_name1)
+        keypoint2: Optional[Skeleton.Keypoint] = self.__keypoints.get(keypoint_name2)
+
+        if keypoint1 is not None and keypoint2 is not None:
+            self.__bounding_shapes.append(Cylinder(
+                base_centre=keypoint1.position, base_radius=radius1,
+                top_centre=keypoint2.position, top_radius=radius2
+            ))
+
+    def __add_bounding_shapes(self) -> None:
+        self.__add_bounding_cylinder("LAnkle", "LKnee", 0.075)
+        self.__add_bounding_cylinder("LElbow", "LShoulder", 0.05)
+        self.__add_bounding_cylinder("LKnee", "LHip", 0.075, 0.1)
+        self.__add_bounding_cylinder("LWrist", "LElbow", 0.05)
+        self.__add_bounding_cylinder("MidHip", "Neck", 0.2)
+        self.__add_bounding_sphere("Nose", "Neck", 1.25)
+        self.__add_bounding_cylinder("RAnkle", "RKnee", 0.075)
+        self.__add_bounding_cylinder("RElbow", "RShoulder", 0.05)
+        self.__add_bounding_cylinder("RKnee", "RHip", 0.075, 0.1)
+        self.__add_bounding_cylinder("RWrist", "RElbow", 0.05)
+
+    def __add_bounding_sphere(self, keypoint_name1: str, keypoint_name2: str, scaling_factor: float = 1.0) -> None:
+        keypoint1: Optional[Skeleton.Keypoint] = self.__keypoints.get(keypoint_name1)
+        keypoint2: Optional[Skeleton.Keypoint] = self.__keypoints.get(keypoint_name2)
+
+        if keypoint1 is not None and keypoint2 is not None:
+            self.__bounding_shapes.append(Sphere(
+                centre=(keypoint1.position + keypoint2.position) / 2,
+                radius=scaling_factor * np.linalg.norm(keypoint2.position - keypoint1.position) / 2
+            ))

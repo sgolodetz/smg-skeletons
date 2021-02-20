@@ -4,8 +4,23 @@ from OpenGL.GL import *
 from typing import Dict, Optional, Tuple
 
 from smg.opengl import OpenGLUtil
+from smg.utility import Cylinder, Sphere, ShapeVisitor
 
 from .skeleton import Skeleton
+
+
+class ShapeRenderer(ShapeVisitor):
+    def visit_cylinder(self, cylinder: Cylinder) -> None:
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        OpenGLUtil.render_cylinder(
+            cylinder.base_centre, cylinder.top_centre, cylinder.base_radius, cylinder.top_radius, slices=10
+        )
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+
+    def visit_sphere(self, sphere: Sphere) -> None:
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        OpenGLUtil.render_sphere(sphere.centre, sphere.radius, slices=10, stacks=10)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
 
 class SkeletonRenderer:
@@ -14,7 +29,7 @@ class SkeletonRenderer:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def render_skeleton(skeleton: Skeleton, *, use_shaped_bones: bool = True) -> None:
+    def render_skeleton(skeleton: Skeleton, *, use_shaped_bones: bool = False) -> None:
         """
         Render the specified 3D skeleton using OpenGL.
 
@@ -110,6 +125,12 @@ class SkeletonRenderer:
                     centre: np.ndarray = (keypoint1.position + keypoint2.position) / 2
                     radius: float = np.linalg.norm(keypoint2.position - keypoint1.position) / 2
                     OpenGLUtil.render_sphere(centre, radius * params[0], slices=10, stacks=10)
+
+        # Render any bounding shapes for the skeleton.
+        glColor3f(0, 0, 0)
+        shape_renderer: ShapeRenderer = ShapeRenderer()
+        for shape in skeleton.bounding_shapes:
+            shape.accept(shape_renderer)
 
         # Disable colour-based materials and lighting again.
         glDisable(GL_COLOR_MATERIAL)
