@@ -131,30 +131,23 @@ class SkeletonRenderer:
         shape_renderer: ShapeRenderer = ShapeRenderer()
         for shape in skeleton.bounding_shapes:
             shape.accept(shape_renderer)
-            # if isinstance(shape, Cylinder):
-            #     import vg
-            #     axis: np.ndarray = vg.normalize(shape.top_centre - shape.base_centre)
-            #     voxel_size: float = 0.1
-            #     radius: float = np.sqrt(3) * voxel_size / 2
-            #     expanded_cylinder: Cylinder = Cylinder(
-            #         base_centre=shape.base_centre - axis * radius,
-            #         base_radius=shape.base_radius + radius,
-            #         top_centre=shape.top_centre + axis * radius,
-            #         top_radius=shape.top_radius + radius
-            #     )
-            #     glColor3f(1, 0, 1)
-            #     expanded_cylinder.accept(shape_renderer)
-            #     glColor3f(0, 0, 0)
 
-        # BEGIN TEMPORARY
-        # Render the voxels hit by the bounding shapes.
-        from typing import List
-        from smg.utility import ShapeUtil
-        voxel_size: float = 0.1
-        voxel_centres: List[np.ndarray] = ShapeUtil.rasterise_shapes(skeleton.bounding_shapes, voxel_size)
-        for voxel_centre in voxel_centres:
-            OpenGLUtil.render_aabb(voxel_centre - np.full(3, voxel_size / 2), voxel_centre + np.full(3, voxel_size / 2))
-        # END TEMPORARY
+        # # BEGIN TEMPORARY
+        # # Render the voxels hit by the bounding shapes.
+        # from typing import List
+        # from smg.utility import ShapeUtil
+        # voxel_size: float = 0.15
+        # from timeit import default_timer as timer
+        # start = timer()
+        # voxel_centres: List[np.ndarray] = ShapeUtil.rasterise_shapes(skeleton.bounding_shapes, voxel_size)
+        # end = timer()
+        # print(f"Rasterisation Time: {end - start}s")
+        # start = timer()
+        # for voxel_centre in voxel_centres:
+        #     OpenGLUtil.render_aabb(voxel_centre - np.full(3, voxel_size / 2), voxel_centre + np.full(3, voxel_size / 2))
+        # end = timer()
+        # print(f"AABB Rendering Time: {end - start}s")
+        # # END TEMPORARY
 
         # Disable colour-based materials and lighting again.
         glDisable(GL_COLOR_MATERIAL)
