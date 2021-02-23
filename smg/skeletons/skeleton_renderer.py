@@ -11,16 +11,16 @@ from .skeleton import Skeleton
 
 class ShapeRenderer(ShapeVisitor):
     def visit_cylinder(self, cylinder: Cylinder) -> None:
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         OpenGLUtil.render_cylinder(
             cylinder.base_centre, cylinder.top_centre, cylinder.base_radius, cylinder.top_radius, slices=10
         )
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        # glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     def visit_sphere(self, sphere: Sphere) -> None:
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         OpenGLUtil.render_sphere(sphere.centre, sphere.radius, slices=10, stacks=10)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        # glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
 
 class SkeletonRenderer:
