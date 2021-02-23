@@ -1,9 +1,10 @@
 import numpy as np
 
 from OpenGL.GL import *
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from smg.opengl import OpenGLUtil, ShapeRenderer
+from smg.utility import ShapeUtil
 
 from .skeleton import Skeleton
 
@@ -14,12 +15,35 @@ class SkeletonRenderer:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def render_skeleton(skeleton: Skeleton, *, render_bounding_shapes: bool = False) -> None:
+    def render_bounding_shapes(skeleton: Skeleton) -> None:
+        """
+        Render the specified 3D skeleton's bounding shapes using OpenGL.
+
+        :param skeleton:    The 3D skeleton.
+        """
+        shape_renderer: ShapeRenderer = ShapeRenderer()
+        for shape in skeleton.bounding_shapes:
+            shape.accept(shape_renderer)
+
+    @staticmethod
+    def render_bounding_voxels(skeleton: Skeleton, *, voxel_size: float) -> None:
+        """
+        Render the voxels touched by the bounding shapes of the specified 3D skeleton using OpenGL.
+
+        :param skeleton:    The 3D skeleton.
+        :param voxel_size:  The voxel size.
+        """
+        voxel_centres: List[np.ndarray] = ShapeUtil.rasterise_shapes(skeleton.bounding_shapes, voxel_size)
+        offset: np.ndarray = np.full(3, voxel_size / 2)
+        for voxel_centre in voxel_centres:
+            OpenGLUtil.render_aabb(voxel_centre - offset, voxel_centre + offset)
+
+    @staticmethod
+    def render_skeleton(skeleton: Skeleton) -> None:
         """
         Render the specified 3D skeleton using OpenGL.
 
-        :param skeleton:                The 3D skeleton.
-        :param render_bounding_shapes:  TODO
+        :param skeleton:    The 3D skeleton.
         """
         bone_colours: Dict[Tuple[str, str], np.ndarray] = {
             ('MidHip', 'Neck'): np.array([153., 0., 0.]),
@@ -50,21 +74,6 @@ class SkeletonRenderer:
             ('RAnkle', 'RHeel'): np.array([0., 153., 153.])
         }
 
-        bone_shapes: Dict[Tuple[str, str], Tuple[str, np.ndarray]] = {
-            ('LAnkle', 'LKnee'): ("cylinder", np.array([0.075])),
-            ('LElbow', 'LShoulder'): ("cylinder", np.array([0.05])),
-            ('LElbow', 'LWrist'): ("cylinder", np.array([0.05])),
-            ('LHip', 'LKnee'): ("cylinder", np.array([0.075, 0.1])),
-            ('MidHip', 'Neck'): ("cylinder", np.array([0.2])),
-            ('Neck', 'Nose'): ("sphere", np.array([1.25])),
-            ('RAnkle', 'RKnee'): ("cylinder", np.array([0.075])),
-            ('RElbow', 'RShoulder'): ("cylinder", np.array([0.05])),
-            ('RElbow', 'RWrist'): ("cylinder", np.array([0.05])),
-            ('RHip', 'RKnee'): ("cylinder", np.array([0.075, 0.1]))
-        }
-
-        default_bone_shape: Tuple[str, np.ndarray] = ("cylinder", np.array([0.025]))
-
         # Enable lighting.
         glEnable(GL_LIGHTING)
 
@@ -91,48 +100,12 @@ class SkeletonRenderer:
         for keypoint1, keypoint2 in skeleton.bones:
             bone_key: Tuple[str, str] = Skeleton.make_bone_key(keypoint1, keypoint2)
             bone_colour: Optional[np.ndarray] = bone_colours.get(bone_key)
-            bone_shape: Tuple[str, np.ndarray] = bone_shapes.get(bone_key, default_bone_shape) \
-                if render_bounding_shapes else default_bone_shape
-
             if bone_colour is not None:
                 # Note: We divide by 153 because that's the maximum value of a component in the colours table,
                 #       and we want the colours to be nice and vibrant.
                 bone_colour = bone_colour / 153
                 glColor3f(*bone_colour)
-
-                shape, params = bone_shape
-                if shape == "cylinder":
-                    OpenGLUtil.render_cylinder(
-                        keypoint1.position, keypoint2.position, params[0],
-                        params[1] if len(params) > 1 else params[0], slices=10
-                    )
-                elif shape == "sphere":
-                    centre: np.ndarray = (keypoint1.position + keypoint2.position) / 2
-                    radius: float = np.linalg.norm(keypoint2.position - keypoint1.position) / 2
-                    OpenGLUtil.render_sphere(centre, radius * params[0], slices=10, stacks=10)
-
-        # Render any bounding shapes for the skeleton.
-        glColor3f(0, 0, 0)
-        shape_renderer: ShapeRenderer = ShapeRenderer()
-        for shape in skeleton.bounding_shapes:
-            shape.accept(shape_renderer)
-
-        # # BEGIN TEMPORARY
-        # # Render the voxels hit by the bounding shapes.
-        # from typing import List
-        # from smg.utility import ShapeUtil
-        # voxel_size: float = 0.15
-        # from timeit import default_timer as timer
-        # start = timer()
-        # voxel_centres: List[np.ndarray] = ShapeUtil.rasterise_shapes(skeleton.bounding_shapes, voxel_size)
-        # end = timer()
-        # print(f"Rasterisation Time: {end - start}s")
-        # start = timer()
-        # for voxel_centre in voxel_centres:
-        #     OpenGLUtil.render_aabb(voxel_centre - np.full(3, voxel_size / 2), voxel_centre + np.full(3, voxel_size / 2))
-        # end = timer()
-        # print(f"AABB Rendering Time: {end - start}s")
-        # # END TEMPORARY
+                OpenGLUtil.render_cylinder(keypoint1.position, keypoint2.position, 0.025, 0.025, slices=10)
 
         # Disable colour-based materials and lighting again.
         glDisable(GL_COLOR_MATERIAL)
