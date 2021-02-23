@@ -3,24 +3,9 @@ import numpy as np
 from OpenGL.GL import *
 from typing import Dict, Optional, Tuple
 
-from smg.opengl import OpenGLUtil
-from smg.utility import Cylinder, Sphere, ShapeVisitor
+from smg.opengl import OpenGLUtil, ShapeRenderer
 
 from .skeleton import Skeleton
-
-
-class ShapeRenderer(ShapeVisitor):
-    def visit_cylinder(self, cylinder: Cylinder) -> None:
-        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-        OpenGLUtil.render_cylinder(
-            cylinder.base_centre, cylinder.top_centre, cylinder.base_radius, cylinder.top_radius, slices=10
-        )
-        # glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-
-    def visit_sphere(self, sphere: Sphere) -> None:
-        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-        OpenGLUtil.render_sphere(sphere.centre, sphere.radius, slices=10, stacks=10)
-        # glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
 
 class SkeletonRenderer:
@@ -29,12 +14,12 @@ class SkeletonRenderer:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def render_skeleton(skeleton: Skeleton, *, use_shaped_bones: bool = False) -> None:
+    def render_skeleton(skeleton: Skeleton, *, render_bounding_shapes: bool = False) -> None:
         """
         Render the specified 3D skeleton using OpenGL.
 
-        :param skeleton:            The 3D skeleton.
-        :param use_shaped_bones:    TODO
+        :param skeleton:                The 3D skeleton.
+        :param render_bounding_shapes:  TODO
         """
         bone_colours: Dict[Tuple[str, str], np.ndarray] = {
             ('MidHip', 'Neck'): np.array([153., 0., 0.]),
@@ -107,7 +92,7 @@ class SkeletonRenderer:
             bone_key: Tuple[str, str] = Skeleton.make_bone_key(keypoint1, keypoint2)
             bone_colour: Optional[np.ndarray] = bone_colours.get(bone_key)
             bone_shape: Tuple[str, np.ndarray] = bone_shapes.get(bone_key, default_bone_shape) \
-                if use_shaped_bones else default_bone_shape
+                if render_bounding_shapes else default_bone_shape
 
             if bone_colour is not None:
                 # Note: We divide by 153 because that's the maximum value of a component in the colours table,
