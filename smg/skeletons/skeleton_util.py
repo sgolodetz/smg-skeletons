@@ -96,36 +96,3 @@ class SkeletonUtil:
             (min_z <= zs) & (zs <= max_z),
             255, 0
         ).astype(np.uint8)
-
-        # mask: np.ndarray = np.zeros(depth_image.shape, dtype=np.uint8)
-        #
-        # from smg.utility import PC_OUTSIDE
-        # for y in range(ws_points.shape[0]):
-        #     for x in range(ws_points.shape[1]):
-        #         if depth_image[y, x] == 0.0:
-        #             continue
-        #         for shape in skeleton.bounding_shapes:
-        #             if shape.classify_point(ws_points[y, x]) != PC_OUTSIDE:
-        #                 mask[y, x] = 255
-        #
-        # return mask
-
-        # start = timer()
-        # for skeleton in skeletons:
-        #     from smg.utility import ShapeUtil
-        #     rasterisation_voxel_size: float = 0.25  # must be an odd multiple of voxel_size
-        #     voxel_centres: List[np.ndarray] = ShapeUtil.rasterise_shapes(
-        #         skeleton.bounding_shapes, rasterisation_voxel_size
-        #     )
-        #     k: int = int((rasterisation_voxel_size // voxel_size) // 2)
-        #     for voxel_centre in voxel_centres:
-        #         with self.__scene_lock:
-        #             for x in range(-k, k+1):
-        #                 for y in range(-k, k+1):
-        #                     for z in range(-k, k+1):
-        #                         p: np.ndarray = voxel_centre + np.array([
-        #                             x * voxel_size, y * voxel_size, z * voxel_size
-        #                         ])
-        #                         self.__octree.delete_node(Vector3(*p))
-        # end = timer()
-        # print(f"Deletion Time: {end - start}s")
