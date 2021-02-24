@@ -82,7 +82,7 @@ class Skeleton:
             (i, j) for i, j in keypoint_pairs if i in self.__keypoints and j in self.__keypoints
         ]
 
-        # TODO
+        # Construct a set of bounding shapes for the skeleton.
         self.__bounding_shapes: List[Shape] = []
         self.__add_bounding_shapes()
 
@@ -109,6 +109,11 @@ class Skeleton:
 
     @property
     def bounding_shapes(self) -> List[Shape]:
+        """
+        Get the bounding shapes for the skeleton.
+
+        :return:    The bounding shapes for the skeleton.
+        """
         return self.__bounding_shapes
 
     @property
@@ -136,8 +141,24 @@ class Skeleton:
 
     # PRIVATE METHODS
 
-    def __add_bounding_cylinder(self, keypoint_name1: str, keypoint_name2: str, radius1: float,
-                                radius2: Optional[float] = None) -> None:
+    def __add_bounding_shapes(self) -> None:
+        self.__add_cylinder_for_bone("LElbow", "LWrist", 0.2, 0.2, top_scaling_factor=3.0)
+        self.__add_cylinder_for_bone("LHip", "LKnee", 0.2, 0.15, top_scaling_factor=1.25)
+        self.__add_cylinder_for_bone("LKnee", "LAnkle", 0.15, top_scaling_factor=1.5)
+        self.__add_cylinder_for_bone("LShoulder", "LElbow", 0.2, top_scaling_factor=1.5)
+        self.__add_cylinder_for_bone("Nose", "MidHip", 0.4)
+        self.__add_cylinder_for_bone("RElbow", "RWrist", 0.2, 0.2, top_scaling_factor=3.0)
+        self.__add_cylinder_for_bone("RHip", "RKnee", 0.2, 0.15, top_scaling_factor=1.25)
+        self.__add_cylinder_for_bone("RKnee", "RAnkle", 0.15, top_scaling_factor=1.5)
+        self.__add_cylinder_for_bone("RShoulder", "RElbow", 0.2, top_scaling_factor=1.5)
+
+        self.__bounding_shapes.append(Sphere(
+            centre=self.__pos("Nose"), radius=1.25 * np.linalg.norm(self.__pos("Nose") - self.__pos("Neck"))
+        ))
+
+    def __add_cylinder_for_bone(self, keypoint_name1: str, keypoint_name2: str, radius1: float,
+                                radius2: Optional[float] = None, *, base_scaling_factor: float = 1.0,
+                                top_scaling_factor: float = 1.0) -> None:
         if radius2 is None:
             radius2 = radius1
 
@@ -146,51 +167,21 @@ class Skeleton:
 
         if keypoint1 is not None and keypoint2 is not None:
             self.__bounding_shapes.append(Cylinder(
-                base_centre=keypoint1.position, base_radius=radius1,
-                top_centre=keypoint2.position, top_radius=radius2
+                base_centre=keypoint2.position + base_scaling_factor * (keypoint1.position - keypoint2.position),
+                base_radius=radius1,
+                top_centre=keypoint1.position + top_scaling_factor * (keypoint2.position - keypoint1.position),
+                top_radius=radius2
             ))
 
-    def __add_bounding_shapes(self) -> None:
-        self.__add_bounding_cylinder("LAnkle", "LKnee", 0.075 * 2)
-        self.__add_bounding_cylinder("LElbow", "LShoulder", 0.05 * 2)
-        self.__add_bounding_cylinder("LKnee", "LHip", 0.075 * 2, 0.1 * 2)
-        # self.__add_bounding_cylinder("LWrist", "LElbow", 0.05 * 2)
-        self.__bounding_shapes.append(Cylinder(
-            base_centre=self.__keypoints["LElbow"].position,
-            base_radius=0.2,
-            top_centre=self.__keypoints["LElbow"].position + 3 * (self.__keypoints["LWrist"].position - self.__keypoints["LElbow"].position),
-            top_radius=0.2
-        ))
-        # self.__add_bounding_cylinder("MidHip", "Neck", 0.2 * 2)
-        self.__add_bounding_cylinder("MidHip", "Nose", 0.2 * 2)
-        # self.__add_bounding_sphere("Nose", "Neck", 1.25)
-        self.__bounding_shapes.append(Sphere(
-            centre=self.__keypoints["Nose"].position,
-            radius=1.25 * np.linalg.norm(self.__keypoints["Nose"].position - self.__keypoints["Neck"].position)
-        ))
-        self.__add_bounding_cylinder("RAnkle", "RKnee", 0.075 * 2)
-        self.__add_bounding_cylinder("RElbow", "RShoulder", 0.05 * 2)
-        self.__add_bounding_cylinder("RKnee", "RHip", 0.075 * 2, 0.1 * 2)
-        # self.__add_bounding_cylinder("RWrist", "RElbow", 0.05 * 2)
-        self.__bounding_shapes.append(Cylinder(
-            base_centre=self.__keypoints["RElbow"].position,
-            base_radius=0.2,
-            top_centre=self.__keypoints["RElbow"].position + 3 * (self.__keypoints["RWrist"].position - self.__keypoints["RElbow"].position),
-            top_radius=0.2
-        ))
-        # self.__bounding_shapes.append(Cylinder(
-        #     base_centre=(self.__keypoints["LAnkle"].position + self.__keypoints["RAnkle"].position) / 2,
-        #     base_radius=0.5,
-        #     top_centre=self.__keypoints["Nose"].position,
-        #     top_radius=0.5
-        # ))
+    # def __add_sphere_for_bone(self, keypoint_name1: str, keypoint_name2: str, scaling_factor: float = 1.0) -> None:
+    #     keypoint1: Optional[Skeleton.Keypoint] = self.__keypoints.get(keypoint_name1)
+    #     keypoint2: Optional[Skeleton.Keypoint] = self.__keypoints.get(keypoint_name2)
+    #
+    #     if keypoint1 is not None and keypoint2 is not None:
+    #         self.__bounding_shapes.append(Sphere(
+    #             centre=(keypoint1.position + keypoint2.position) / 2,
+    #             radius=scaling_factor * np.linalg.norm(keypoint2.position - keypoint1.position) / 2
+    #         ))
 
-    def __add_bounding_sphere(self, keypoint_name1: str, keypoint_name2: str, scaling_factor: float = 1.0) -> None:
-        keypoint1: Optional[Skeleton.Keypoint] = self.__keypoints.get(keypoint_name1)
-        keypoint2: Optional[Skeleton.Keypoint] = self.__keypoints.get(keypoint_name2)
-
-        if keypoint1 is not None and keypoint2 is not None:
-            self.__bounding_shapes.append(Sphere(
-                centre=(keypoint1.position + keypoint2.position) / 2,
-                radius=scaling_factor * np.linalg.norm(keypoint2.position - keypoint1.position) / 2
-            ))
+    def __pos(self, keypoint_name: str) -> np.ndarray:
+        return self.__keypoints[keypoint_name].position
