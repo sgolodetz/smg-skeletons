@@ -51,6 +51,7 @@ class SkeletonUtil:
             # If we're debugging, show the person mask.
             if debug:
                 cv2.imshow("Person Mask", person_mask)
+                cv2.waitKey(1)
 
         return depopulated_depth_image
 

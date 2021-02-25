@@ -1,6 +1,8 @@
 import numpy as np
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
+
+from smg.utility import Cylinder, Shape, Sphere
 
 
 class Skeleton:
@@ -80,6 +82,10 @@ class Skeleton:
             (i, j) for i, j in keypoint_pairs if i in self.__keypoints and j in self.__keypoints
         ]
 
+        # Construct a set of bounding shapes for the skeleton.
+        self.__bounding_shapes: List[Shape] = []
+        self.__add_bounding_shapes()
+
     # SPECIAL METHODS
 
     def __repr__(self) -> str:
@@ -100,6 +106,15 @@ class Skeleton:
         :return:    The bones of the skeleton, as a list of detected keypoint pairs.
         """
         return [(self.__keypoints[i], self.__keypoints[j]) for i, j in self.__keypoint_pairs]
+
+    @property
+    def bounding_shapes(self) -> List[Shape]:
+        """
+        Get the bounding shapes for the skeleton.
+
+        :return:    The bounding shapes for the skeleton.
+        """
+        return self.__bounding_shapes
 
     @property
     def keypoints(self) -> Dict[str, Keypoint]:
@@ -123,3 +138,50 @@ class Skeleton:
         """
         # noinspection PyTypeChecker
         return tuple(sorted([keypoint1.name, keypoint2.name]))
+
+    # PRIVATE METHODS
+
+    def __add_bounding_shapes(self) -> None:
+        """Add a set of bounding shapes to the skeleton."""
+        self.__add_cylinder_for_bone("LElbow", "LWrist", 0.2, 0.2, top_stretch=3.0)
+        self.__add_cylinder_for_bone("LHip", "LKnee", 0.2, 0.15, top_stretch=1.25)
+        self.__add_cylinder_for_bone("LKnee", "LAnkle", 0.15, top_stretch=1.5)
+        self.__add_cylinder_for_bone("LShoulder", "LElbow", 0.2, top_stretch=1.5)
+        self.__add_cylinder_for_bone("Nose", "MidHip", 0.4)
+        self.__add_cylinder_for_bone("RElbow", "RWrist", 0.2, 0.2, top_stretch=3.0)
+        self.__add_cylinder_for_bone("RHip", "RKnee", 0.2, 0.15, top_stretch=1.25)
+        self.__add_cylinder_for_bone("RKnee", "RAnkle", 0.15, top_stretch=1.5)
+        self.__add_cylinder_for_bone("RShoulder", "RElbow", 0.2, top_stretch=1.5)
+
+        neck_keypoint: Optional[Skeleton.Keypoint] = self.__keypoints.get("Neck")
+        nose_keypoint: Optional[Skeleton.Keypoint] = self.__keypoints.get("Nose")
+        if neck_keypoint is not None and nose_keypoint is not None:
+            neck_pos, nose_pos = neck_keypoint.position, nose_keypoint.position
+            self.__bounding_shapes.append(Sphere(centre=nose_pos, radius=1.25 * np.linalg.norm(nose_pos - neck_pos)))
+
+    def __add_cylinder_for_bone(self, base_keypoint_name: str, top_keypoint_name: str, base_radius: float,
+                                top_radius: Optional[float] = None, *, base_stretch: float = 1.0,
+                                top_stretch: float = 1.0) -> None:
+        """
+        Add a bounding cylinder for the specified bone to the skeleton.
+
+        :param base_keypoint_name:  The name of the keypoint associated with the cylinder's base.
+        :param top_keypoint_name:   The name of the keypoint associated with the cylinder's top.
+        :param base_radius:         The radius of the cylinder's base.
+        :param top_radius:          The radius of the cylinder's top.
+        :param base_stretch:        The factor by which to stretch the base of the cylinder.
+        :param top_stretch:         The factor by which to stretch the top of the cylinder.
+        """
+        if top_radius is None:
+            top_radius = base_radius
+
+        base_keypoint: Optional[Skeleton.Keypoint] = self.__keypoints.get(base_keypoint_name)
+        top_keypoint: Optional[Skeleton.Keypoint] = self.__keypoints.get(top_keypoint_name)
+
+        if base_keypoint is not None and top_keypoint is not None:
+            self.__bounding_shapes.append(Cylinder(
+                base_centre=top_keypoint.position + base_stretch * (base_keypoint.position - top_keypoint.position),
+                base_radius=base_radius,
+                top_centre=base_keypoint.position + top_stretch * (top_keypoint.position - base_keypoint.position),
+                top_radius=top_radius
+            ))
