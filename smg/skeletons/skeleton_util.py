@@ -14,10 +14,13 @@ class SkeletonUtil:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def depopulate_depth_image(skeletons: List[Skeleton], depth_image: np.ndarray, world_from_camera: np.ndarray,
-                               intrinsics: Tuple[float, float, float, float], *, debug: bool = False) -> np.ndarray:
+    def depopulate_depth_image_using_3d_boxes(
+            skeletons: List[Skeleton], depth_image: np.ndarray, world_from_camera: np.ndarray,
+            intrinsics: Tuple[float, float, float, float], *, debug: bool = False
+    ) -> np.ndarray:
         """
-        Make a 'depopulated' version of a depth image from which the detected people have been removed.
+        Make a 'depopulated' version of a depth image from which the detected people have been removed
+        by making use of person masks made from 3D bounding boxes around their skeletons.
 
         .. note::
             At most one person mask will be shown for debugging purposes.
@@ -43,7 +46,7 @@ class SkeletonUtil:
         # For each detected 3D skeleton:
         for skeleton in skeletons:
             # Make the corresponding person mask.
-            person_mask: np.ndarray = SkeletonUtil.make_person_mask(skeleton, depth_image, ws_points)
+            person_mask: np.ndarray = SkeletonUtil.make_person_mask_from_3d_box(skeleton, depth_image, ws_points)
 
             # Remove it from the output image.
             depopulated_depth_image = np.where(person_mask == 0, depopulated_depth_image, 0.0)
@@ -56,20 +59,45 @@ class SkeletonUtil:
         return depopulated_depth_image
 
     @staticmethod
-    def make_person_mask(skeleton: Skeleton, depth_image: np.ndarray, ws_points: np.ndarray) -> np.ndarray:
+    def depopulate_depth_image_using_people_mask(depth_image: np.ndarray, people_mask: np.ndarray, *,
+                                                 debug: bool = False) -> np.ndarray:
         """
-        Make a binary mask for the person corresponding to a 3D skeleton detected in a frame.
+        Make a 'depopulated' version of a depth image from which the detected people have been removed
+        by removing all the pixels marked as people in a mask.
+
+        :param depth_image:     The depth image.
+        :param people_mask:     The people mask.
+        :param debug:           Whether to show the people mask for debugging purposes.
+        :return:                The depopulated depth image.
+        """
+        depopulated_depth_image: np.ndarray = depth_image.copy()
+        depopulated_depth_image = np.where(people_mask == 0, depopulated_depth_image, 0.0)
+
+        # If we're debugging, show the people mask.
+        if debug:
+            cv2.imshow("People Mask", people_mask)
+            cv2.waitKey(1)
+
+        return depopulated_depth_image
+
+    @staticmethod
+    def make_person_mask_from_3d_box(skeleton: Skeleton, depth_image: np.ndarray, ws_points: np.ndarray, *,
+                                     border_size: float = 0.5) -> np.ndarray:
+        """
+        Make a binary mask for the person corresponding to a 3D skeleton detected in a frame by determining
+        which world-space points fall within a 3D bounding box around the skeleton.
 
         .. note::
             The binary mask we make is intended to cover the whole person, but may in practice also include
-            other parts of the image. Currently, we make no promises as to the tightness of fit.
+            other parts of the image. We make no promises as to the tightness of fit.
 
         :param skeleton:    The detected 3D skeleton.
         :param depth_image: The depth image for the frame.
         :param ws_points:   The world-space points image for the frame.
+        :param border_size: The size of border to leave around the skeleton when making its 3D bounding box.
         :return:            The binary person mask.
         """
-        # Compute a (very) conservative 3D bounding box around the detected skeleton.
+        # Compute a conservative 3D bounding box around the detected skeleton.
         min_x, min_y, min_z = np.inf, np.inf, np.inf
         max_x, max_y, max_z = -np.inf, -np.inf, -np.inf
 
@@ -78,12 +106,12 @@ class SkeletonUtil:
             min_x, min_y, min_z = min(min_x, p[0]), min(min_y, p[1]), min(min_z, p[2])
             max_x, max_y, max_z = max(max_x, p[0]), max(max_y, p[1]), max(max_z, p[2])
 
-        min_x -= 0.5
-        min_y -= 0.5
-        min_z -= 0.5
-        max_x += 0.5
-        max_y += 0.5
-        max_z += 0.5
+        min_x -= border_size
+        min_y -= border_size
+        min_z -= border_size
+        max_x += border_size
+        max_y += border_size
+        max_z += border_size
 
         # Make a binary mask consisting of all pixels with valid depths whose world-space points are
         # within this bounding box.
