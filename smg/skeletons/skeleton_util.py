@@ -14,53 +14,7 @@ class SkeletonUtil:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def depopulate_depth_image_using_3d_boxes(
-            skeletons: List[Skeleton], depth_image: np.ndarray, world_from_camera: np.ndarray,
-            intrinsics: Tuple[float, float, float, float], *, debug: bool = False
-    ) -> np.ndarray:
-        """
-        Make a 'depopulated' version of a depth image from which the detected people have been removed
-        by making use of person masks made from 3D bounding boxes around their skeletons.
-
-        .. note::
-            At most one person mask will be shown for debugging purposes.
-        .. note::
-            The depopulation process is intended to be deliberately conservative, in the sense that we try to do
-            our best to make sure that all of the detected people have been fully removed, but we don't mind too
-            much if some other parts of the depth image are removed as well.
-
-        :param skeletons:           The 3D skeletons of the detected people.
-        :param depth_image:         The depth image.
-        :param world_from_camera:   The camera pose from which the depth image was captured.
-        :param intrinsics:          The camera intrinsics.
-        :param debug:               Whether to show a person mask for debugging purposes (see note).
-        :return:                    The depopulated depth image.
-        """
-        depopulated_depth_image: np.ndarray = depth_image.copy()
-
-        # Compute the world-space points image.
-        ws_points: np.ndarray = GeometryUtil.compute_world_points_image_fast(
-            depth_image, world_from_camera, intrinsics
-        )
-
-        # For each detected 3D skeleton:
-        for skeleton in skeletons:
-            # Make the corresponding person mask.
-            person_mask: np.ndarray = SkeletonUtil.make_person_mask_from_3d_box(skeleton, depth_image, ws_points)
-
-            # Remove it from the output image.
-            depopulated_depth_image = np.where(person_mask == 0, depopulated_depth_image, 0.0)
-
-            # If we're debugging, show the person mask.
-            if debug:
-                cv2.imshow("Person Mask", person_mask)
-                cv2.waitKey(1)
-
-        return depopulated_depth_image
-
-    @staticmethod
-    def depopulate_depth_image_using_people_mask(depth_image: np.ndarray, people_mask: np.ndarray, *,
-                                                 debug: bool = False) -> np.ndarray:
+    def depopulate_depth_image(depth_image: np.ndarray, people_mask: np.ndarray, *, debug: bool = False) -> np.ndarray:
         """
         Make a 'depopulated' version of a depth image from which the detected people have been removed
         by removing all the pixels marked as people in a mask.
@@ -79,6 +33,67 @@ class SkeletonUtil:
             cv2.waitKey(1)
 
         return depopulated_depth_image
+
+    @staticmethod
+    def depopulate_depth_image_using_3d_boxes(
+        skeletons: List[Skeleton], depth_image: np.ndarray, world_from_camera: np.ndarray,
+        intrinsics: Tuple[float, float, float, float], *, debug: bool = False
+    ) -> np.ndarray:
+        """
+        Make a 'depopulated' version of a depth image from which the detected people have been removed
+        by making use of person masks made from 3D bounding boxes around their skeletons.
+
+        .. note::
+            The depopulation process is intended to be deliberately conservative, in the sense that we try to do
+            our best to make sure that all of the detected people have been fully removed, but we don't mind too
+            much if some other parts of the depth image are removed as well.
+
+        :param skeletons:           The 3D skeletons of the detected people.
+        :param depth_image:         The depth image.
+        :param world_from_camera:   The camera pose from which the depth image was captured.
+        :param intrinsics:          The camera intrinsics.
+        :param debug:               Whether to show the people mask for debugging purposes.
+        :return:                    The depopulated depth image.
+        """
+        people_mask: np.ndarray = SkeletonUtil.make_people_mask_from_3d_boxes(
+            skeletons, depth_image, world_from_camera, intrinsics
+        )
+        return SkeletonUtil.depopulate_depth_image(depth_image, people_mask, debug=debug)
+
+    @staticmethod
+    def make_people_mask_from_3d_boxes(
+        skeletons: List[Skeleton], depth_image: np.ndarray, world_from_camera: np.ndarray,
+        intrinsics: Tuple[float, float, float, float], *, border_size: float = 0.5
+    ) -> np.ndarray:
+        """
+        Make a binary mask for the people corresponding to 3D skeletons detected in a frame by determining
+        which world-space points fall within at least one of the 3D bounding boxes around the skeletons.
+
+        :param skeletons:           The 3D skeletons of the detected people.
+        :param depth_image:         The depth image.
+        :param world_from_camera:   The camera pose from which the depth image was captured.
+        :param intrinsics:          The camera intrinsics.
+        :param border_size:         The size of border to leave around each skeleton when making its 3D bounding box.
+        :return:                    The binary people mask.
+        """
+        people_mask: np.ndarray = np.zeros(depth_image.shape, dtype=np.uint8)
+
+        # Compute the world-space points image.
+        ws_points: np.ndarray = GeometryUtil.compute_world_points_image_fast(
+            depth_image, world_from_camera, intrinsics
+        )
+
+        # For each detected 3D skeleton:
+        for skeleton in skeletons:
+            # Make the corresponding person mask.
+            person_mask: np.ndarray = SkeletonUtil.make_person_mask_from_3d_box(
+                skeleton, depth_image, ws_points, border_size=border_size
+            )
+
+            # Add it to the output mask.
+            people_mask = np.where(person_mask == 0, people_mask, 255)
+
+        return people_mask
 
     @staticmethod
     def make_person_mask_from_3d_box(skeleton: Skeleton, depth_image: np.ndarray, ws_points: np.ndarray, *,
