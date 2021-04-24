@@ -21,7 +21,8 @@ class SkeletonRenderer:
 
         :param skeleton:    The 3D skeleton.
         """
-        shape_renderer: ShapeRenderer = ShapeRenderer()
+        # : ShapeRenderer
+        shape_renderer = ShapeRenderer()
         for shape in skeleton.bounding_shapes:
             shape.accept(shape_renderer)
 
@@ -33,8 +34,10 @@ class SkeletonRenderer:
         :param skeleton:    The 3D skeleton.
         :param voxel_size:  The voxel size.
         """
-        voxel_centres: List[np.ndarray] = ShapeUtil.rasterise_shapes(skeleton.bounding_shapes, voxel_size)
-        offset: np.ndarray = np.full(3, voxel_size / 2)
+        # : List[np.ndarray]
+        voxel_centres = ShapeUtil.rasterise_shapes(skeleton.bounding_shapes, voxel_size)
+        # : np.ndarray
+        offset = np.full(3, voxel_size / 2)
         for voxel_centre in voxel_centres:
             OpenGLUtil.render_aabb(voxel_centre - offset, voxel_centre + offset)
 
@@ -45,7 +48,8 @@ class SkeletonRenderer:
 
         :param skeleton:    The 3D skeleton.
         """
-        bone_colours: Dict[Tuple[str, str], np.ndarray] = {
+        # : Dict[Tuple[str, str], np.ndarray]
+        bone_colours = {
             ('MidHip', 'Neck'): np.array([153., 0., 0.]),
             ('Neck', 'RShoulder'): np.array([153., 51., 0.]),
             ('LShoulder', 'Neck'): np.array([102., 153., 0.]),
@@ -79,7 +83,8 @@ class SkeletonRenderer:
 
         # Set up the first light to cast light in the +z direction.
         glEnable(GL_LIGHT0)
-        pos: np.ndarray = np.array([0.0, 0.0, -1.0, 0.0])
+        # : np.ndarray
+        pos = np.array([0.0, 0.0, -1.0, 0.0])
         glLightfv(GL_LIGHT0, GL_POSITION, pos)
 
         # Set up the second light to cast light in the -z direction.
@@ -98,8 +103,10 @@ class SkeletonRenderer:
 
         # Render the bones between the keypoints.
         for keypoint1, keypoint2 in skeleton.bones:
-            bone_key: Tuple[str, str] = Skeleton.make_bone_key(keypoint1, keypoint2)
-            bone_colour: Optional[np.ndarray] = bone_colours.get(bone_key)
+            # : Tuple[str, str]
+            bone_key = Skeleton.make_bone_key(keypoint1, keypoint2)
+            # : Optional[np.ndarray]
+            bone_colour = bone_colours.get(bone_key)
             if bone_colour is not None:
                 # Note: We divide by 153 because that's the maximum value of a component in the colours table,
                 #       and we want the colours to be nice and vibrant.
