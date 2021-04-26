@@ -23,12 +23,9 @@ class Skeleton:
             :param position:    The position of the keypoint (either 2D or 3D).
             :param score:       The score assigned to the keypoint (a float in [0,1]).
             """
-            # : str
-            self.__name = name
-            # : np.ndarray
-            self.__position = position
-            # : float
-            self.__score = score
+            self.__name = name  # type: str
+            self.__position = position  # type: np.ndarray
+            self.__score = score  # type: float
 
         # SPECIAL METHODS
 
@@ -38,7 +35,6 @@ class Skeleton:
 
             :return:    A string representation of the keypoint.
             """
-            # return f"Keypoint({repr(self.__name)}, {repr(self.__position)}, {repr(self.__score)})"
             return "Keypoint({}, {}, {})".format(repr(self.__name), repr(self.__position), repr(self.__score))
 
         # PROPERTIES
@@ -79,18 +75,15 @@ class Skeleton:
         :param keypoints:       The keypoints that have been detected for the skeleton.
         :param keypoint_pairs:  Pairs of names denoting keypoints that should be joined by bones.
         """
-        # : Dict[str, Skeleton.Keypoint]
-        self.__keypoints = keypoints
+        self.__keypoints = keypoints  # type: Dict[str, Skeleton.Keypoint]
 
         # Filter the pairs of names, keeping only those for which both keypoints have been detected.
-        # : List[Tuple[str, str]]
         self.__keypoint_pairs = [
             (i, j) for i, j in keypoint_pairs if i in self.__keypoints and j in self.__keypoints
-        ]
+        ]  # type: List[Tuple[str, str]]
 
         # Construct a set of bounding shapes for the skeleton.
-        # : List[Shape]
-        self.__bounding_shapes = []
+        self.__bounding_shapes = []  # type: List[Shape]
         self.__add_bounding_shapes()
 
     # SPECIAL METHODS
@@ -101,7 +94,6 @@ class Skeleton:
 
         :return:    A string representation of the skeleton.
         """
-        # return f"Skeleton({repr(self.__keypoints)}, {repr(self.__keypoint_pairs)})"
         return "Skeleton({}, {})".format(repr(self.__keypoints), repr(self.__keypoint_pairs))
 
     # PROPERTIES
@@ -161,10 +153,8 @@ class Skeleton:
         self.__add_cylinder_for_bone("RKnee", "RAnkle", 0.15, top_stretch=1.5)
         self.__add_cylinder_for_bone("RShoulder", "RElbow", 0.2, top_stretch=1.5)
 
-        # : Optional[Skeleton.Keypoint]
-        neck_keypoint = self.__keypoints.get("Neck")
-        # : Optional[Skeleton.Keypoint]
-        nose_keypoint = self.__keypoints.get("Nose")
+        neck_keypoint = self.__keypoints.get("Neck")  # type: Optional[Skeleton.Keypoint]
+        nose_keypoint = self.__keypoints.get("Nose")  # type: Optional[Skeleton.Keypoint]
         if neck_keypoint is not None and nose_keypoint is not None:
             neck_pos, nose_pos = neck_keypoint.position, nose_keypoint.position
             self.__bounding_shapes.append(Sphere(centre=nose_pos, radius=1.25 * np.linalg.norm(nose_pos - neck_pos)))
@@ -185,10 +175,8 @@ class Skeleton:
         if top_radius is None:
             top_radius = base_radius
 
-        # : Optional[Skeleton.Keypoint]
-        base_keypoint = self.__keypoints.get(base_keypoint_name)
-        # : Optional[Skeleton.Keypoint]
-        top_keypoint = self.__keypoints.get(top_keypoint_name)
+        base_keypoint = self.__keypoints.get(base_keypoint_name)  # type: Optional[Skeleton.Keypoint]
+        top_keypoint = self.__keypoints.get(top_keypoint_name)  # type: Optional[Skeleton.Keypoint]
 
         if base_keypoint is not None and top_keypoint is not None:
             self.__bounding_shapes.append(Cylinder(

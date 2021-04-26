@@ -24,8 +24,7 @@ class SkeletonUtil:
         :param debug:           Whether to show the people mask for debugging purposes.
         :return:                The depopulated depth image.
         """
-        # : np.ndarray
-        depopulated_depth_image = depth_image.copy()
+        depopulated_depth_image = depth_image.copy()  # type: np.ndarray
         depopulated_depth_image = np.where(people_mask == 0, depopulated_depth_image, 0.0)
 
         # If we're debugging, show the people mask.
@@ -56,10 +55,9 @@ class SkeletonUtil:
         :param debug:               Whether to show the people mask for debugging purposes.
         :return:                    The depopulated depth image.
         """
-        # : np.ndarray
         people_mask = SkeletonUtil.make_people_mask_from_3d_boxes(
             skeletons, depth_image, world_from_camera, intrinsics
-        )
+        )  # type: np.ndarray
         return SkeletonUtil.depopulate_depth_image(depth_image, people_mask, debug=debug)
 
     @staticmethod
@@ -78,22 +76,19 @@ class SkeletonUtil:
         :param border_size:         The size of border to leave around each skeleton when making its 3D bounding box.
         :return:                    The binary people mask.
         """
-        # : np.ndarray
-        people_mask = np.zeros(depth_image.shape, dtype=np.uint8)
+        people_mask = np.zeros(depth_image.shape, dtype=np.uint8)  # type: np.ndarray
 
         # Compute the world-space points image.
-        # : np.ndarray
         ws_points = GeometryUtil.compute_world_points_image_fast(
             depth_image, world_from_camera, intrinsics
-        )
+        )  # type: np.ndarray
 
         # For each detected 3D skeleton:
         for skeleton in skeletons:
             # Make the corresponding person mask.
-            # : np.ndarray
             person_mask = SkeletonUtil.make_person_mask_from_3d_box(
                 skeleton, depth_image, ws_points, border_size=border_size
-            )
+            )  # type: np.ndarray
 
             # Add it to the output mask.
             people_mask = np.where(person_mask == 0, people_mask, 255)
@@ -122,8 +117,7 @@ class SkeletonUtil:
         max_x, max_y, max_z = -np.inf, -np.inf, -np.inf
 
         for _, keypoint in skeleton.keypoints.items():
-            # : np.ndarray
-            p = keypoint.position
+            p = keypoint.position  # type: np.ndarray
             min_x, min_y, min_z = min(min_x, p[0]), min(min_y, p[1]), min(min_z, p[2])
             max_x, max_y, max_z = max(max_x, p[0]), max(max_y, p[1]), max(max_z, p[2])
 
