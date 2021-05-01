@@ -105,7 +105,10 @@ class SkeletonRenderer:
                 #       and we want the colours to be nice and vibrant.
                 bone_colour = bone_colour / 153
                 glColor3f(*bone_colour)
-                OpenGLUtil.render_cylinder(keypoint1.position, keypoint2.position, 0.025, 0.025, slices=10)
+            else:
+                glColor3f(0.0, 0.0, 0.0)
+
+            OpenGLUtil.render_cylinder(keypoint1.position, keypoint2.position, 0.025, 0.025, slices=10)
 
         # Disable colour-based materials and lighting again.
         glDisable(GL_COLOR_MATERIAL)
