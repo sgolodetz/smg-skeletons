@@ -99,7 +99,7 @@ class SkeletonRenderer:
         # Render the bones between the keypoints.
         for keypoint1, keypoint2 in skeleton.bones:
             bone_key = Skeleton.make_bone_key(keypoint1, keypoint2)  # type: Tuple[str, str]
-            bone_colour = bone_colours.get(bone_key)  # type: Optional[np.ndarray]
+            bone_colour = bone_colours.get(bone_key)                 # type: Optional[np.ndarray]
             if bone_colour is not None:
                 # Note: We divide by 153 because that's the maximum value of a component in the colours table,
                 #       and we want the colours to be nice and vibrant.

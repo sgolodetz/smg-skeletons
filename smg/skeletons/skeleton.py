@@ -23,9 +23,9 @@ class Skeleton:
             :param position:    The position of the keypoint (either 2D or 3D).
             :param score:       The score assigned to the keypoint (a float in [0,1]).
             """
-            self.__name = name  # type: str
+            self.__name = name          # type: str
             self.__position = position  # type: np.ndarray
-            self.__score = score  # type: float
+            self.__score = score        # type: float
 
         # SPECIAL METHODS
 
@@ -176,7 +176,7 @@ class Skeleton:
             top_radius = base_radius
 
         base_keypoint = self.__keypoints.get(base_keypoint_name)  # type: Optional[Skeleton.Keypoint]
-        top_keypoint = self.__keypoints.get(top_keypoint_name)  # type: Optional[Skeleton.Keypoint]
+        top_keypoint = self.__keypoints.get(top_keypoint_name)    # type: Optional[Skeleton.Keypoint]
 
         if base_keypoint is not None and top_keypoint is not None:
             self.__bounding_shapes.append(Cylinder(
