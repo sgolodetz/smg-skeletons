@@ -3,7 +3,7 @@ import numpy as np
 from OpenGL.GL import *
 from typing import Dict, List, Optional, Tuple
 
-from smg.opengl import OpenGLUtil, ShapeRenderer
+from smg.opengl import OpenGLLightingContext, OpenGLUtil, ShapeRenderer
 from smg.utility import ShapeUtil
 
 from .skeleton import Skeleton
@@ -13,6 +13,19 @@ class SkeletonRenderer:
     """Utility functions to render 3D skeletons."""
 
     # PUBLIC STATIC METHODS
+
+    @staticmethod
+    def default_lighting_context() -> OpenGLLightingContext:
+        """
+        TODO
+
+        :return:    TODO
+        """
+        direction = np.array([0.0, 0.0, 1.0, 0.0])  # type: np.ndarray
+        return OpenGLLightingContext({
+            0: OpenGLLightingContext.DirectionalLight(direction),
+            1: OpenGLLightingContext.DirectionalLight(-direction),
+        })
 
     @staticmethod
     def render_bounding_shapes(skeleton: Skeleton) -> None:
@@ -74,23 +87,6 @@ class SkeletonRenderer:
             ('RAnkle', 'RHeel'): np.array([0., 153., 153.])
         }  # type: Dict[Tuple[str, str], np.ndarray]
 
-        # Enable lighting.
-        glEnable(GL_LIGHTING)
-
-        # Set up the first light to cast light in the +z direction.
-        glEnable(GL_LIGHT0)
-        pos = np.array([0.0, 0.0, -1.0, 0.0])  # type: np.ndarray
-        glLightfv(GL_LIGHT0, GL_POSITION, pos)
-
-        # Set up the second light to cast light in the -z direction.
-        glEnable(GL_LIGHT1)
-        glLightfv(GL_LIGHT1, GL_DIFFUSE, np.array([1, 1, 1, 1]))
-        glLightfv(GL_LIGHT1, GL_SPECULAR, np.array([1, 1, 1, 1]))
-        glLightfv(GL_LIGHT1, GL_POSITION, -pos)
-
-        # Enable colour-based materials (i.e. let material properties be defined by glColor).
-        glEnable(GL_COLOR_MATERIAL)
-
         # Render the keypoints themselves, colouring them on a scale according to their score (0 = red, 1 = green).
         for keypoint_name, keypoint in skeleton.keypoints.items():
             glColor3f(1 - keypoint.score, keypoint.score, 0.0)
@@ -109,7 +105,3 @@ class SkeletonRenderer:
                 glColor3f(0.0, 0.0, 0.0)
 
             OpenGLUtil.render_cylinder(keypoint1.position, keypoint2.position, 0.025, 0.025, slices=10)
-
-        # Disable colour-based materials and lighting again.
-        glDisable(GL_COLOR_MATERIAL)
-        glDisable(GL_LIGHTING)
