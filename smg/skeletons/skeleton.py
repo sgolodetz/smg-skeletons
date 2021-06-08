@@ -86,6 +86,7 @@ class Skeleton:
             self.__midhip_from_rest = midhip_from_rest                                      # type: np.ndarray
 
             self.__w_t_c = self.__calculate_w_t_c()                                         # type: np.ndarray
+            # print(primary_keypoint_name, np.linalg.det(self.__w_t_c))
 
         # PROPERTIES
 
@@ -121,7 +122,7 @@ class Skeleton:
             v0, v1, v2 = self.triangle_vertices
             z = vg.normalize(np.cross(v1 - v0, v2 - v0))                                         # type: np.ndarray
             y = vg.normalize(self.secondary_keypoint.position - self.primary_keypoint.position)  # type: np.ndarray
-            x = vg.normalize(np.cross(z, y))                                                     # type: np.ndarray
+            x = vg.normalize(np.cross(y, z))                                                     # type: np.ndarray
             w_t_c[0:3, 0:3] = np.column_stack([x, y, z])
             w_t_c[0:3, 3] = self.__primary_keypoint.position
             return w_t_c
@@ -213,13 +214,6 @@ class Skeleton:
 
     # PUBLIC METHODS
 
-    # def compute_joint_rotations(self) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
-    #     self.__joint_rotations.clear()
-    #     self.__joint_rel_rotations.clear()
-    #     for keypoint_name in self.keypoint_orienters:
-    #         self.__compute_joint_rotations(keypoint_name)
-    #     return self.__joint_rotations, self.__joint_rel_rotations
-
     def compute_joint_rotations(self) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
         self.__joint_rotations.clear()
         self.__joint_rel_rotations.clear()
@@ -232,12 +226,27 @@ class Skeleton:
             world_from_current: np.ndarray = orienter.w_t_c[0:3, 0:3]
             current_from_rest: np.ndarray = np.linalg.inv(world_from_current) @ world_from_rest
             self.__joint_rotations[keypoint_name] = current_from_rest
-            from scipy.spatial.transform import Rotation
-            print(keypoint_name, Rotation.from_matrix(np.linalg.inv(current_from_rest)).as_rotvec())
+            # from scipy.spatial.transform import Rotation
+            # import math
+            # rot = Rotation.from_matrix(np.linalg.inv(current_from_rest)).as_rotvec()
+            # print(keypoint_name, vg.normalize(rot), np.linalg.norm(rot) * 180 / math.pi)
 
         for keypoint_name, orienter in self.keypoint_orienters.items():
             # TODO
-            self.__joint_rel_rotations[keypoint_name] = np.eye(3)
+            current_from_rest: np.ndarray = self.__joint_rotations[orienter.primary_keypoint.name]
+            # world_from_current: np.ndarray = orienter.w_t_c[0:3, 0:3]
+            if orienter.parent_keypoint is not None:
+                # world_from_parent: np.ndarray = self.keypoint_orienters[orienter.parent_keypoint.name].w_t_c[0:3, 0:3]
+                # self.__joint_rel_rotations[keypoint_name] = np.linalg.inv(world_from_current) @ world_from_parent
+                parent_from_rest: np.ndarray = self.__joint_rotations[orienter.parent_keypoint.name]
+                self.__joint_rel_rotations[keypoint_name] = current_from_rest @ np.linalg.inv(parent_from_rest)
+            else:
+                self.__joint_rel_rotations[keypoint_name] = np.eye(3)
+
+            # from scipy.spatial.transform import Rotation
+            # import math
+            # rot = Rotation.from_matrix(self.__joint_rel_rotations[keypoint_name]).as_rotvec()
+            # print(keypoint_name, rot, vg.normalize(rot), np.linalg.norm(rot) * 180 / math.pi)
 
         return self.__joint_rotations, self.__joint_rel_rotations
 
@@ -291,7 +300,7 @@ class Skeleton:
     def __add_keypoint_orienters(self) -> None:
         self.__try_add_keypoint_orienter(
             "LElbow", "LWrist", "LShoulder", ("LElbow", "LHip", "LWrist"),
-            np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+            np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
             "LHip", "LKnee", "MidHip", ("LHip", "MidHip", "LKnee"),
@@ -303,7 +312,7 @@ class Skeleton:
         )
         self.__try_add_keypoint_orienter(
             "LShoulder", "LElbow", "Neck", ("LShoulder", "Neck", "LElbow"),
-            np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+            np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
             "MidHip", "Neck", None, ("RHip", "LHip", "Neck"),
@@ -315,7 +324,7 @@ class Skeleton:
         )
         self.__try_add_keypoint_orienter(
             "RElbow", "RWrist", "RShoulder", ("RElbow", "RWrist", "RHip"),
-            np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+            np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
             "RHip", "RKnee", "MidHip", ("RHip", "RKnee", "MidHip"),
@@ -327,30 +336,8 @@ class Skeleton:
         )
         self.__try_add_keypoint_orienter(
             "RShoulder", "RElbow", "Neck", ("RShoulder", "RElbow", "Neck"),
-            np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+            np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
         )
-
-    # def __compute_joint_rotations(self, keypoint_name: str) -> None:
-    #     if self.__joint_rotations.get(keypoint_name) is not None:
-    #         return
-    #
-    #     orienter: Skeleton.KeypointOrienter = self.keypoint_orienters[keypoint_name]
-    #     world_from_midhip: np.ndarray = self.keypoint_orienters["MidHip"].w_t_c[0:3, 0:3]
-    #     midhip_from_world: np.ndarray = np.linalg.inv(world_from_midhip)
-    #     world_from_rest: np.ndarray = world_from_midhip @ orienter.midhip_from_rest
-    #     current_from_rest: np.ndarray = np.linalg.inv(orienter.w_t_c[0:3, 0:3]) @ world_from_rest
-    #
-    #     current_from_rest = world_from_midhip @ current_from_rest @ midhip_from_world
-    #
-    #     if orienter.parent_keypoint is not None:
-    #         self.__compute_joint_rotations(orienter.parent_keypoint.name)
-    #         parent_from_rest: np.ndarray = self.__joint_rotations.get(orienter.parent_keypoint.name)
-    #     else:
-    #         parent_from_rest: np.ndarray = np.eye(3)
-    #
-    #     current_from_parent: np.ndarray = current_from_rest @ np.linalg.inv(parent_from_rest)
-    #     self.__joint_rotations[keypoint_name] = np.linalg.inv(current_from_rest)
-    #     self.__joint_rel_rotations[keypoint_name] = np.linalg.inv(current_from_parent)
 
     def __try_add_keypoint_orienter(self, primary_keypoint_name: str, secondary_keypoint_name: str,
                                     parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str],

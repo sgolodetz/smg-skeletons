@@ -60,21 +60,21 @@ class SkeletonRenderer:
             glColor3f(0.0, 1.0, 1.0)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             glLineWidth(2)
-            # glBegin(GL_TRIANGLES)
-            #
-            # glVertex3f(*v0)
-            # glVertex3f(*v1)
-            # glVertex3f(*v2)
-            #
-            # glEnd()
+            glBegin(GL_TRIANGLES)
+
+            glVertex3f(*v0)
+            glVertex3f(*v1)
+            glVertex3f(*v2)
+
+            glEnd()
             glLineWidth(1)
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
             glLineWidth(2)
             world_from_current = orienter.w_t_c  # type: np.ndarray
-            CameraRenderer.render_camera(
-                CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_current)), axis_scale=0.1
-            )
+            # CameraRenderer.render_camera(
+            #     CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_current)), axis_scale=0.1
+            # )
             glLineWidth(1)
 
             # TODO: Not actually the rest position, but the rest orientation.
