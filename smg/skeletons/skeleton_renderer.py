@@ -54,8 +54,8 @@ class SkeletonRenderer:
 
     @staticmethod
     def render_keypoint_orienters(skeleton: Skeleton) -> None:
-        for _, keypoint_orienter in skeleton.keypoint_orienters.items():
-            v0, v1, v2 = keypoint_orienter.triangle_vertices
+        for _, orienter in skeleton.keypoint_orienters.items():
+            v0, v1, v2 = orienter.triangle_vertices
 
             glColor3f(0.0, 1.0, 1.0)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
@@ -72,10 +72,16 @@ class SkeletonRenderer:
 
             glLineWidth(5)
             CameraRenderer.render_camera(
-                CameraPoseConverter.pose_to_camera(np.linalg.inv(keypoint_orienter.pose)), CameraRenderer.AXES_XYZ,
-                axis_scale=0.1
+                CameraPoseConverter.pose_to_camera(np.linalg.inv(orienter.w_t_c)), axis_scale=0.1
             )
             glLineWidth(1)
+
+            pseudo_world_from_rest = orienter.w_t_c.copy()  # type: np.ndarray
+            pseudo_world_from_rest[0:3, 0:3] = \
+                skeleton.keypoint_orienters["MidHip"].w_t_c[0:3, 0:3] @ orienter.midhip_from_rest
+            CameraRenderer.render_camera(
+                CameraPoseConverter.pose_to_camera(np.linalg.inv(pseudo_world_from_rest)), axis_scale=0.1
+            )
 
     @staticmethod
     def render_skeleton(skeleton: Skeleton) -> None:
