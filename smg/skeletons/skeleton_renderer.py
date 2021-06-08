@@ -3,7 +3,8 @@ import numpy as np
 from OpenGL.GL import *
 from typing import Dict, List, Optional, Tuple
 
-from smg.opengl import OpenGLLightingContext, OpenGLUtil, ShapeRenderer
+from smg.opengl import CameraRenderer, OpenGLLightingContext, OpenGLUtil, ShapeRenderer
+from smg.rigging.helpers import CameraPoseConverter
 from smg.utility import ShapeUtil
 
 from .skeleton import Skeleton
@@ -50,6 +51,31 @@ class SkeletonRenderer:
         offset = np.full(3, voxel_size / 2)  # type: np.ndarray
         for voxel_centre in voxel_centres:
             OpenGLUtil.render_aabb(voxel_centre - offset, voxel_centre + offset)
+
+    @staticmethod
+    def render_keypoint_orienters(skeleton: Skeleton) -> None:
+        for _, keypoint_orienter in skeleton.keypoint_orienters.items():
+            v0, v1, v2 = keypoint_orienter.triangle_vertices
+
+            glColor3f(0.0, 1.0, 1.0)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            glLineWidth(2)
+            glBegin(GL_TRIANGLES)
+
+            glVertex3f(*v0)
+            glVertex3f(*v1)
+            glVertex3f(*v2)
+
+            glEnd()
+            glLineWidth(1)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+
+            glLineWidth(5)
+            CameraRenderer.render_camera(
+                CameraPoseConverter.pose_to_camera(np.linalg.inv(keypoint_orienter.pose)), CameraRenderer.AXES_XYZ,
+                axis_scale=0.1
+            )
+            glLineWidth(1)
 
     @staticmethod
     def render_skeleton(skeleton: Skeleton) -> None:

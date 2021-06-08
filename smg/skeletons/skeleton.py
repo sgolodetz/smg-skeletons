@@ -1,4 +1,5 @@
 import numpy as np
+import vg
 
 from typing import Dict, List, Optional, Tuple
 
@@ -66,6 +67,54 @@ class Skeleton:
             """
             return self.__score
 
+    class KeypointOrienter:
+        """TODO"""
+
+        # CONSTRUCTOR
+
+        def __init__(self, skeleton: "Skeleton", primary_keypoint_name: str, secondary_keypoint_name: str,
+                     triangle: Tuple[str, str, str]):
+            self.__skeleton = skeleton                                                      # type: Skeleton
+            self.__primary_keypoint = self.__skeleton.keypoints[primary_keypoint_name]      # type: Skeleton.Keypoint
+            self.__secondary_keypoint = self.__skeleton.keypoints[secondary_keypoint_name]  # type: Skeleton.Keypoint
+            self.__triangle = triangle                                                      # type: Tuple[str, str, str]
+            self.__triangle_keypoints = tuple(
+                [self.__skeleton.keypoints[name] for name in self.__triangle]
+            )  # type: Tuple[Skeleton.Keypoint, Skeleton.Keypoint, Skeleton.Keypoint]
+
+            self.__pose = self.__calculate_pose()                                           # type: np.ndarray
+
+        # PROPERTIES
+
+        @property
+        def pose(self) -> np.ndarray:
+            return self.__pose
+
+        @property
+        def primary_keypoint(self) -> "Skeleton.Keypoint":
+            return self.__primary_keypoint
+
+        @property
+        def secondary_keypoint(self) -> "Skeleton.Keypoint":
+            return self.__secondary_keypoint
+
+        @property
+        def triangle_vertices(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+            # noinspection PyTypeChecker
+            return tuple([keypoint.position for keypoint in self.__triangle_keypoints])
+
+        # PRIVATE METHODS
+
+        def __calculate_pose(self) -> np.ndarray:
+            pose = np.eye(4)                                                                     # type: np.ndarray
+            v0, v1, v2 = self.triangle_vertices
+            z = vg.normalize(np.cross(v1 - v0, v2 - v0))                                         # type: np.ndarray
+            y = vg.normalize(self.secondary_keypoint.position - self.primary_keypoint.position)  # type: np.ndarray
+            x = vg.normalize(np.cross(z, y))                                                     # type: np.ndarray
+            pose[0:3, 0:3] = np.column_stack([x, y, z])
+            pose[0:3, 3] = self.__primary_keypoint.position
+            return pose
+
     # CONSTRUCTOR
 
     def __init__(self, keypoints: Dict[str, Keypoint], keypoint_pairs: List[Tuple[str, str]]):
@@ -85,6 +134,10 @@ class Skeleton:
         # Construct a set of bounding shapes for the skeleton.
         self.__bounding_shapes = []  # type: List[Shape]
         self.__add_bounding_shapes()
+
+        # Construct a set of keypoint orienters for the skeleton.
+        self.__keypoint_orienters = {}  # type: Dict[str, Skeleton.KeypointOrienter]
+        self.__add_keypoint_orienters()
 
     # SPECIAL METHODS
 
@@ -124,6 +177,10 @@ class Skeleton:
         :return:    The detected keypoints of the skeleton, as a keypoint name -> keypoint map.
         """
         return self.__keypoints
+
+    @property
+    def keypoint_orienters(self) -> Dict[str, KeypointOrienter]:
+        return self.__keypoint_orienters
 
     # PUBLIC STATIC METHODS
 
@@ -185,3 +242,25 @@ class Skeleton:
                 top_centre=base_keypoint.position + top_stretch * (top_keypoint.position - base_keypoint.position),
                 top_radius=top_radius
             ))
+
+    def __add_keypoint_orienters(self) -> None:
+        self.__try_add_keypoint_orienter("LElbow", "LWrist", ("LElbow", "LHip", "LWrist"))
+        self.__try_add_keypoint_orienter("LHip", "LKnee", ("LHip", "MidHip", "LKnee"))
+        self.__try_add_keypoint_orienter("LKnee", "LAnkle", ("LKnee", "MidHip", "LAnkle"))
+        self.__try_add_keypoint_orienter("LShoulder", "LElbow", ("LShoulder", "Neck", "LElbow"))
+        self.__try_add_keypoint_orienter("MidHip", "Neck", ("RHip", "LHip", "Neck"))
+        self.__try_add_keypoint_orienter("Neck", "MidHip", ("LShoulder", "RShoulder", "MidHip"))
+        self.__try_add_keypoint_orienter("RElbow", "RWrist", ("RElbow", "RWrist", "RHip"))
+        self.__try_add_keypoint_orienter("RHip", "RKnee", ("RHip", "RKnee", "MidHip"))
+        self.__try_add_keypoint_orienter("RKnee", "RAnkle", ("RKnee", "RAnkle", "MidHip"))
+        self.__try_add_keypoint_orienter("RShoulder", "RElbow", ("RShoulder", "RElbow", "Neck"))
+
+    def __try_add_keypoint_orienter(self, primary_keypoint: str, secondary_keypoint: str,
+                                    triangle: Tuple[str, str, str]) -> None:
+        for name in [primary_keypoint, secondary_keypoint, *triangle]:
+            if self.__keypoints.get(name) is None:
+                return
+
+        self.__keypoint_orienters[primary_keypoint] = Skeleton.KeypointOrienter(
+            self, primary_keypoint, secondary_keypoint, triangle
+        )
