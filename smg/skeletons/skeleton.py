@@ -314,18 +314,18 @@ class Skeleton:
             return
 
         orienter: Skeleton.KeypointOrienter = self.keypoint_orienters[keypoint_name]
-        rest_orientation: np.ndarray = self.keypoint_orienters["MidHip"].w_t_c[0:3, 0:3] @ orienter.midhip_from_rest
-        joint_rotation: np.ndarray = orienter.w_t_c[0:3, 0:3] @ np.linalg.inv(rest_orientation)
+        world_from_rest: np.ndarray = self.keypoint_orienters["MidHip"].w_t_c[0:3, 0:3] @ orienter.midhip_from_rest
+        current_from_rest: np.ndarray = np.linalg.inv(orienter.w_t_c[0:3, 0:3]) @ world_from_rest
 
         if orienter.parent_keypoint is not None:
             self.__compute_joint_rotations(orienter.parent_keypoint.name)
-            parent_rotation: np.ndarray = self.__joint_rotations.get(orienter.parent_keypoint.name)
+            parent_from_rest: np.ndarray = self.__joint_rotations.get(orienter.parent_keypoint.name)
         else:
-            parent_rotation: np.ndarray = np.eye(3)
+            parent_from_rest: np.ndarray = np.eye(3)
 
-        joint_rel_rotation: np.ndarray = joint_rotation @ np.linalg.inv(parent_rotation)
-        self.__joint_rotations[keypoint_name] = joint_rotation
-        self.__joint_rel_rotations[keypoint_name] = joint_rel_rotation
+        current_from_parent: np.ndarray = current_from_rest @ np.linalg.inv(parent_from_rest)
+        self.__joint_rotations[keypoint_name] = current_from_rest
+        self.__joint_rel_rotations[keypoint_name] = current_from_parent
 
     def __try_add_keypoint_orienter(self, primary_keypoint_name: str, secondary_keypoint_name: str,
                                     parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str],
