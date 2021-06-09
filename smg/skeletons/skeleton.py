@@ -86,7 +86,7 @@ class Skeleton:
             self.__midhip_from_rest = midhip_from_rest                                      # type: np.ndarray
 
             self.__w_t_c = self.__calculate_w_t_c()                                         # type: np.ndarray
-            # print(primary_keypoint_name, np.linalg.det(self.__w_t_c))
+            print(primary_keypoint_name, np.linalg.det(self.__w_t_c))
 
         # PROPERTIES
 
@@ -119,6 +119,7 @@ class Skeleton:
             z = vg.normalize(np.cross(v1 - v0, v2 - v0))                                           # type: np.ndarray
             y = vg.normalize(self.__secondary_keypoint.position - self.primary_keypoint.position)  # type: np.ndarray
             x = vg.normalize(np.cross(y, z))                                                       # type: np.ndarray
+            z = vg.normalize(np.cross(x, y))                                                       # type: np.ndarray
             w_t_c[0:3, 0:3] = np.column_stack([x, y, z])
             w_t_c[0:3, 3] = self.__primary_keypoint.position
             return w_t_c
