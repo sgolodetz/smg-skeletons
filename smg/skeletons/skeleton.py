@@ -228,6 +228,7 @@ class Skeleton:
 
             # m = orienter.w_t_c.copy()[0:3, 0:3]
             # m = m @ np.linalg.inv(orienter.midhip_from_rest)
+            # (wTc * rTm)^-1 * wTm = mTr * cTw * wTr * rTm = mTr * (cTw * wTr) * mTr^-1
             m = np.linalg.inv(orienter.w_t_c[0:3, 0:3] @ np.linalg.inv(orienter.midhip_from_rest)) @ world_from_midhip[0:3, 0:3]
 
             self.__joint_rotations[keypoint_name] = np.linalg.inv(m)
@@ -317,7 +318,7 @@ class Skeleton:
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
-            "LShoulder", "LElbow", "Neck", ("LShoulder", "Neck", "LElbow"),
+            "LShoulder", "LElbow", "Neck", ("LShoulder", "LHip", "LWrist"),
             np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
@@ -341,7 +342,7 @@ class Skeleton:
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
-            "RShoulder", "RElbow", "Neck", ("RShoulder", "RElbow", "Neck"),
+            "RShoulder", "RElbow", "Neck", ("RShoulder", "RWrist", "RHip"),
             np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
         )
 
