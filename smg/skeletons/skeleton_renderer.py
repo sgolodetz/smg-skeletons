@@ -59,7 +59,7 @@ class SkeletonRenderer:
 
             glColor3f(0.0, 1.0, 1.0)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-            glLineWidth(2)
+            glLineWidth(1)
             glBegin(GL_TRIANGLES)
 
             glVertex3f(*v0)
@@ -70,20 +70,28 @@ class SkeletonRenderer:
             glLineWidth(1)
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
+            glPushAttrib(GL_ENABLE_BIT)
+            glLineStipple(1, 0xCCCC)
+            glEnable(GL_LINE_STIPPLE)
             glLineWidth(2)
-            world_from_current = orienter.w_t_c  # type: np.ndarray
-            # CameraRenderer.render_camera(
-            #     CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_current)), axis_scale=0.1
-            # )
+            world_from_current = orienter.w_t_c.copy()  # type: np.ndarray
+            world_from_current[0:3, 0:3] = world_from_current[0:3, 0:3] @ np.linalg.inv(orienter.midhip_from_rest)
+            CameraRenderer.render_camera(
+                CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_current)), axis_scale=0.1
+            )
             glLineWidth(1)
+            glPopAttrib()
 
             # TODO: Not actually the rest position, but the rest orientation.
+            glLineWidth(2)
             world_from_midhip = skeleton.keypoint_orienters["MidHip"].w_t_c  # type: np.ndarray
             world_from_rest = orienter.w_t_c.copy()  # type: np.ndarray
             world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ orienter.midhip_from_rest
+            world_from_rest[0:3, 0:3] = world_from_rest[0:3, 0:3] @ np.linalg.inv(orienter.midhip_from_rest)
             CameraRenderer.render_camera(
                 CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_rest)), axis_scale=0.1
             )
+            glLineWidth(1)
 
     @staticmethod
     def render_skeleton(skeleton: Skeleton) -> None:

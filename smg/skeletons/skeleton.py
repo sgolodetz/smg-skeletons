@@ -222,10 +222,13 @@ class Skeleton:
         midhip_from_world: np.ndarray = np.linalg.inv(world_from_midhip)
 
         for keypoint_name, orienter in self.keypoint_orienters.items():
-            world_from_rest: np.ndarray = world_from_midhip @ orienter.midhip_from_rest
-            world_from_current: np.ndarray = orienter.w_t_c[0:3, 0:3]
-            current_from_rest: np.ndarray = np.linalg.inv(world_from_current) @ world_from_rest
-            self.__joint_rotations[keypoint_name] = current_from_rest
+            # world_from_rest: np.ndarray = world_from_midhip @ orienter.midhip_from_rest
+            # world_from_current: np.ndarray = orienter.w_t_c[0:3, 0:3]
+            # current_from_rest: np.ndarray = np.linalg.inv(world_from_current) @ world_from_rest
+            # self.__joint_rotations[keypoint_name] = current_from_rest
+            m = orienter.w_t_c.copy()[0:3, 0:3]
+            m = m @ np.linalg.inv(orienter.midhip_from_rest)
+            self.__joint_rotations[keypoint_name] = m
             # from scipy.spatial.transform import Rotation
             # import math
             # rot = Rotation.from_matrix(np.linalg.inv(current_from_rest)).as_rotvec()
@@ -243,10 +246,10 @@ class Skeleton:
             else:
                 self.__joint_rel_rotations[keypoint_name] = np.eye(3)
 
-            # from scipy.spatial.transform import Rotation
-            # import math
-            # rot = Rotation.from_matrix(self.__joint_rel_rotations[keypoint_name]).as_rotvec()
-            # print(keypoint_name, rot, vg.normalize(rot), np.linalg.norm(rot) * 180 / math.pi)
+            from scipy.spatial.transform import Rotation
+            import math
+            rot = Rotation.from_matrix(self.__joint_rel_rotations[keypoint_name]).as_rotvec()
+            print(keypoint_name, rot, vg.normalize(rot), np.linalg.norm(rot) * 180 / math.pi)
 
         return self.__joint_rotations, self.__joint_rel_rotations
 
@@ -307,7 +310,7 @@ class Skeleton:
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
-            "LKnee", "LAnkle", "LHip", ("LKnee", "MidHip", "LAnkle"),
+            "LKnee", "LAnkle", "LHip", ("LKnee", "RKnee", "LAnkle"),
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
@@ -331,7 +334,7 @@ class Skeleton:
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
-            "RKnee", "RAnkle", "RHip", ("RKnee", "RAnkle", "MidHip"),
+            "RKnee", "RAnkle", "RHip", ("RKnee", "RAnkle", "LKnee"),
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
