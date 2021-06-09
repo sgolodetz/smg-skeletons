@@ -85,9 +85,8 @@ class SkeletonRenderer:
             # TODO: Not actually the rest position, but the rest orientation.
             glLineWidth(2)
             world_from_midhip = skeleton.keypoint_orienters["MidHip"].w_t_c  # type: np.ndarray
-            world_from_rest = orienter.w_t_c.copy()  # type: np.ndarray
-            world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ orienter.midhip_from_rest
-            world_from_rest[0:3, 0:3] = world_from_rest[0:3, 0:3] @ np.linalg.inv(orienter.midhip_from_rest)
+            world_from_rest = world_from_midhip.copy()
+            world_from_rest[0:3, 3] = orienter.w_t_c[0:3, 3]
             CameraRenderer.render_camera(
                 CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_rest)), axis_scale=0.1
             )
