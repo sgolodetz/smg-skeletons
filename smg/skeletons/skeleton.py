@@ -95,16 +95,12 @@ class Skeleton:
             return self.__midhip_from_rest
 
         @property
-        def parent_keypoint(self) -> Optional[np.ndarray]:
+        def parent_keypoint(self) -> Optional["Skeleton.Keypoint"]:
             return self.__parent_keypoint
 
         @property
         def primary_keypoint(self) -> "Skeleton.Keypoint":
             return self.__primary_keypoint
-
-        @property
-        def secondary_keypoint(self) -> "Skeleton.Keypoint":
-            return self.__secondary_keypoint
 
         @property
         def triangle_vertices(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -118,11 +114,11 @@ class Skeleton:
         # PRIVATE METHODS
 
         def __calculate_w_t_c(self) -> np.ndarray:
-            w_t_c = np.eye(4)                                                                    # type: np.ndarray
+            w_t_c = np.eye(4)                                                                      # type: np.ndarray
             v0, v1, v2 = self.triangle_vertices
-            z = vg.normalize(np.cross(v1 - v0, v2 - v0))                                         # type: np.ndarray
-            y = vg.normalize(self.secondary_keypoint.position - self.primary_keypoint.position)  # type: np.ndarray
-            x = vg.normalize(np.cross(y, z))                                                     # type: np.ndarray
+            z = vg.normalize(np.cross(v1 - v0, v2 - v0))                                           # type: np.ndarray
+            y = vg.normalize(self.__secondary_keypoint.position - self.primary_keypoint.position)  # type: np.ndarray
+            x = vg.normalize(np.cross(y, z))                                                       # type: np.ndarray
             w_t_c[0:3, 0:3] = np.column_stack([x, y, z])
             w_t_c[0:3, 3] = self.__primary_keypoint.position
             return w_t_c
