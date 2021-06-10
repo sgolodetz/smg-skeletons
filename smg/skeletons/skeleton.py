@@ -226,7 +226,7 @@ class Skeleton:
             # m = orienter.w_t_c.copy()[0:3, 0:3]
             # m = m @ np.linalg.inv(orienter.midhip_from_rest)
             # (wTc * rTm)^-1 * wTm = mTr * cTw * wTr * rTm = mTr * (cTw * wTr) * mTr^-1
-            m = np.linalg.inv(orienter.w_t_c[0:3, 0:3] @ np.linalg.inv(orienter.midhip_from_rest)) @ world_from_midhip[0:3, 0:3]
+            m = orienter.midhip_from_rest @ np.linalg.inv(orienter.w_t_c[0:3, 0:3]) @ world_from_midhip[0:3, 0:3]
 
             self.__joint_rotations[keypoint_name] = np.linalg.inv(m)
 
@@ -237,13 +237,20 @@ class Skeleton:
 
         for keypoint_name, orienter in self.keypoint_orienters.items():
             # TODO
+            # mTc0 * (cTw * wTc0) * mTc0^-1
             current_from_rest: np.ndarray = self.__joint_rotations[orienter.primary_keypoint.name]
             # world_from_current: np.ndarray = orienter.w_t_c[0:3, 0:3]
             if orienter.parent_keypoint is not None:
                 # world_from_parent: np.ndarray = self.keypoint_orienters[orienter.parent_keypoint.name].w_t_c[0:3, 0:3]
                 # self.__joint_rel_rotations[keypoint_name] = np.linalg.inv(world_from_current) @ world_from_parent
+                # mTp0 * (pTw * wTp0) * mTp0^-1
                 parent_from_rest: np.ndarray = self.__joint_rotations[orienter.parent_keypoint.name]
-                self.__joint_rel_rotations[keypoint_name] = current_from_rest @ np.linalg.inv(parent_from_rest)
+
+                # mTc0 * cTw * wTp * mTp0^-1
+                parent_orienter = self.keypoint_orienters[orienter.parent_keypoint.name]
+                m = orienter.midhip_from_rest @ np.linalg.inv(orienter.w_t_c[0:3, 0:3]) @ parent_orienter.w_t_c[0:3, 0:3] @ np.linalg.inv(parent_orienter.midhip_from_rest)
+                self.__joint_rel_rotations[keypoint_name] = np.linalg.inv(m)
+                # self.__joint_rel_rotations[keypoint_name] = current_from_rest @ np.linalg.inv(parent_from_rest)
             else:
                 self.__joint_rel_rotations[keypoint_name] = np.eye(3)
 
