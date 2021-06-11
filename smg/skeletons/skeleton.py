@@ -266,11 +266,11 @@ class Skeleton:
             np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
-            "LHip", "LKnee", "MidHip", ("LHip", "MidHip", "LKnee"),
+            "LHip", "LKnee", "MidHip", ("RHip", "LHip", "Neck"),
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
-            "LKnee", "LAnkle", "LHip", ("LKnee", "RKnee", "LAnkle"),
+            "LKnee", "LAnkle", "LHip", ("RHip", "LHip", "Neck"),
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
@@ -290,11 +290,11 @@ class Skeleton:
             np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
-            "RHip", "RKnee", "MidHip", ("RHip", "RKnee", "MidHip"),
+            "RHip", "RKnee", "MidHip", ("RHip", "LHip", "Neck"),
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
-            "RKnee", "RAnkle", "RHip", ("RKnee", "RAnkle", "LKnee"),
+            "RKnee", "RAnkle", "RHip", ("RHip", "LHip", "Neck"),
             np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
         )
         self.__try_add_keypoint_orienter(
