@@ -78,9 +78,8 @@ class SkeletonRenderer:
             glEnd()
             glPopAttrib()
 
-            # TODO
-            world_from_current = skeleton.global_keypoint_poses.get(keypoint_name).copy()
-            world_from_current[0:3, 0:3] = world_from_current[0:3, 0:3] @ np.linalg.inv(orienter.midhip_from_rest)
+            # Render the current pose of the associated keypoint.
+            world_from_current = skeleton.global_keypoint_poses[keypoint_name]  # type: np.ndarray
 
             glPushAttrib(GL_LINE_BIT)
             glLineWidth(2)
@@ -91,10 +90,10 @@ class SkeletonRenderer:
 
             glPopAttrib()
 
-            # TODO: Not actually the rest position, but the rest orientation.
+            # Render the rest orientation of the associated keypoint at its current position, to enable comparison.
             world_from_midhip = skeleton.global_keypoint_poses.get("MidHip")  # type: Optional[np.ndarray]
-            world_from_rest = world_from_midhip.copy()
-            # world_from_rest[0:3, 0:3] = world_from_rest[0:3, 0:3] @ orienter.midhip_from_rest[0:3, 0:3]
+            world_from_rest = np.eye(4)                                       # type: np.ndarray
+            world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ orienter.midhip_from_rest[0:3, 0:3]
             world_from_rest[0:3, 3] = skeleton.global_keypoint_poses[keypoint_name][0:3, 3]
 
             glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT)
