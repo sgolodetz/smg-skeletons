@@ -149,7 +149,8 @@ class Skeleton:
         self.__add_keypoint_orienters()
 
         # TODO
-        self.__joint_rel_rotations = {}  # type: Dict[str, np.ndarray]
+        self.__local_joint_rotations = {}  # type: Dict[str, np.ndarray]
+        self.__compute_local_joint_rotations()
 
     # SPECIAL METHODS
 
@@ -194,6 +195,10 @@ class Skeleton:
         """
         return self.__keypoints
 
+    @property
+    def local_joint_rotations(self) -> Dict[str, np.ndarray]:
+        return self.__local_joint_rotations
+
     # PUBLIC STATIC METHODS
 
     @staticmethod
@@ -207,22 +212,6 @@ class Skeleton:
         """
         # noinspection PyTypeChecker
         return tuple(sorted([keypoint1.name, keypoint2.name]))
-
-    # PUBLIC METHODS
-
-    def compute_joint_rotations(self) -> Dict[str, np.ndarray]:
-        self.__joint_rel_rotations.clear()
-
-        for keypoint_name, orienter in self.keypoint_orienters.items():
-            if orienter.parent_keypoint is not None:
-                # mTc0 * cTw * wTp * mTp0^-1
-                parent_orienter = self.keypoint_orienters[orienter.parent_keypoint.name]
-                m = orienter.midhip_from_rest @ np.linalg.inv(orienter.w_t_c[0:3, 0:3]) @ parent_orienter.w_t_c[0:3, 0:3] @ np.linalg.inv(parent_orienter.midhip_from_rest)
-                self.__joint_rel_rotations[keypoint_name] = np.linalg.inv(m)
-            else:
-                self.__joint_rel_rotations[keypoint_name] = np.eye(3)
-
-        return self.__joint_rel_rotations
 
     # PRIVATE METHODS
 
@@ -312,6 +301,16 @@ class Skeleton:
             "RShoulder", "RElbow", "Neck", ("RShoulder", "RWrist", "RHip"),
             np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
         )
+
+    def __compute_local_joint_rotations(self) -> None:
+        for keypoint_name, orienter in self.keypoint_orienters.items():
+            if orienter.parent_keypoint is not None:
+                # mTc0 * cTw * wTp * mTp0^-1
+                parent_orienter = self.keypoint_orienters[orienter.parent_keypoint.name]
+                m = orienter.midhip_from_rest @ np.linalg.inv(orienter.w_t_c[0:3, 0:3]) @ parent_orienter.w_t_c[0:3, 0:3] @ np.linalg.inv(parent_orienter.midhip_from_rest)
+                self.__local_joint_rotations[keypoint_name] = np.linalg.inv(m)
+            else:
+                self.__local_joint_rotations[keypoint_name] = np.eye(3)
 
     def __try_add_keypoint_orienter(self, primary_keypoint_name: str, secondary_keypoint_name: str,
                                     parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str],
