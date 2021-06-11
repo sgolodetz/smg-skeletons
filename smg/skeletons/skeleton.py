@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import vg
 
@@ -85,9 +86,6 @@ class Skeleton:
             )  # type: Tuple[Skeleton.Keypoint, Skeleton.Keypoint, Skeleton.Keypoint]
             self.__midhip_from_rest = midhip_from_rest                                      # type: np.ndarray
 
-            self.__w_t_c = self.__calculate_w_t_c()                                         # type: np.ndarray
-            print(primary_keypoint_name, np.linalg.det(self.__w_t_c))
-
         # PROPERTIES
 
         @property
@@ -103,26 +101,13 @@ class Skeleton:
             return self.__primary_keypoint
 
         @property
+        def secondary_keypoint(self) -> "Skeleton.Keypoint":
+            return self.__secondary_keypoint
+
+        @property
         def triangle_vertices(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
             # noinspection PyTypeChecker
             return tuple([keypoint.position for keypoint in self.__triangle_keypoints])
-
-        @property
-        def w_t_c(self) -> np.ndarray:
-            return self.__w_t_c
-
-        # PRIVATE METHODS
-
-        def __calculate_w_t_c(self) -> np.ndarray:
-            w_t_c = np.eye(4)                                                                      # type: np.ndarray
-            v0, v1, v2 = self.triangle_vertices
-            z = vg.normalize(np.cross(v1 - v0, v2 - v0))                                           # type: np.ndarray
-            y = vg.normalize(self.__secondary_keypoint.position - self.primary_keypoint.position)  # type: np.ndarray
-            x = vg.normalize(np.cross(y, z))                                                       # type: np.ndarray
-            z = vg.normalize(np.cross(x, y))                                                       # type: np.ndarray
-            w_t_c[0:3, 0:3] = np.column_stack([x, y, z])
-            w_t_c[0:3, 3] = self.__primary_keypoint.position
-            return w_t_c
 
     # CONSTRUCTOR
 
@@ -149,8 +134,12 @@ class Skeleton:
         self.__add_keypoint_orienters()
 
         # TODO
-        self.__local_joint_rotations = {}  # type: Dict[str, np.ndarray]
-        self.__compute_local_joint_rotations()
+        self.__global_keypoint_poses = {}  # type: Dict[str, np.ndarray]
+        self.__compute_global_keypoint_poses()
+
+        # TODO
+        self.__local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
+        self.__compute_local_keypoint_rotations()
 
     # SPECIAL METHODS
 
@@ -183,6 +172,10 @@ class Skeleton:
         return self.__bounding_shapes
 
     @property
+    def global_keypoint_poses(self) -> Dict[str, np.ndarray]:
+        return self.__global_keypoint_poses
+
+    @property
     def keypoint_orienters(self) -> Dict[str, KeypointOrienter]:
         return self.__keypoint_orienters
 
@@ -196,8 +189,8 @@ class Skeleton:
         return self.__keypoints
 
     @property
-    def local_joint_rotations(self) -> Dict[str, np.ndarray]:
-        return self.__local_joint_rotations
+    def local_keypoint_rotations(self) -> Dict[str, np.ndarray]:
+        return self.__local_keypoint_rotations
 
     # PUBLIC STATIC METHODS
 
@@ -302,15 +295,34 @@ class Skeleton:
             np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
         )
 
-    def __compute_local_joint_rotations(self) -> None:
+    def __compute_global_keypoint_poses(self) -> None:
+        for keypoint_name, orienter in self.keypoint_orienters.items():
+            w_t_c = np.eye(4)  # type: np.ndarray
+            v0, v1, v2 = orienter.triangle_vertices
+            z = vg.normalize(np.cross(v1 - v0, v2 - v0))  # type: np.ndarray
+            y = vg.normalize(orienter.secondary_keypoint.position - orienter.primary_keypoint.position)  # type: np.ndarray
+            x = vg.normalize(np.cross(y, z))  # type: np.ndarray
+            z = vg.normalize(np.cross(x, y))  # type: np.ndarray
+            w_t_c[0:3, 0:3] = np.column_stack([x, y, z])
+            w_t_c[0:3, 3] = orienter.primary_keypoint.position
+            self.__global_keypoint_poses[keypoint_name] = w_t_c
+
+    def __compute_local_keypoint_rotations(self) -> None:
         for keypoint_name, orienter in self.keypoint_orienters.items():
             if orienter.parent_keypoint is not None:
-                # mTc0 * cTw * wTp * mTp0^-1
-                parent_orienter = self.keypoint_orienters[orienter.parent_keypoint.name]
-                m = orienter.midhip_from_rest @ np.linalg.inv(orienter.w_t_c[0:3, 0:3]) @ parent_orienter.w_t_c[0:3, 0:3] @ np.linalg.inv(parent_orienter.midhip_from_rest)
-                self.__local_joint_rotations[keypoint_name] = np.linalg.inv(m)
+                parent_keypoint_name = orienter.parent_keypoint.name
+                parent_orienter = self.keypoint_orienters[parent_keypoint_name]
+                world_from_current = self.__global_keypoint_poses[keypoint_name]
+                world_from_parent = self.__global_keypoint_poses[parent_keypoint_name]
+
+                # mTp0 * pTw * wTc * mTc0^-1
+                self.__local_keypoint_rotations[keypoint_name] = \
+                    parent_orienter.midhip_from_rest @ \
+                    np.linalg.inv(world_from_parent[0:3, 0:3]) @ \
+                    world_from_current[0:3, 0:3] @ \
+                    np.linalg.inv(orienter.midhip_from_rest)
             else:
-                self.__local_joint_rotations[keypoint_name] = np.eye(3)
+                self.__local_keypoint_rotations[keypoint_name] = np.eye(3)
 
     def __try_add_keypoint_orienter(self, primary_keypoint_name: str, secondary_keypoint_name: str,
                                     parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str],

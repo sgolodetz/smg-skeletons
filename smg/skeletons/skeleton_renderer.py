@@ -54,7 +54,7 @@ class SkeletonRenderer:
 
     @staticmethod
     def render_keypoint_orienters(skeleton: Skeleton) -> None:
-        for _, orienter in skeleton.keypoint_orienters.items():
+        for keypoint_name, orienter in skeleton.keypoint_orienters.items():
             # TODO
             v0, v1, v2 = orienter.triangle_vertices
 
@@ -74,7 +74,7 @@ class SkeletonRenderer:
             glPopAttrib()
 
             # TODO
-            world_from_current = orienter.w_t_c.copy()  # type: np.ndarray
+            world_from_current = skeleton.global_keypoint_poses.get(keypoint_name).copy()
             world_from_current[0:3, 0:3] = world_from_current[0:3, 0:3] @ np.linalg.inv(orienter.midhip_from_rest)
 
             glPushAttrib(GL_LINE_BIT)
@@ -87,10 +87,10 @@ class SkeletonRenderer:
             glPopAttrib()
 
             # TODO: Not actually the rest position, but the rest orientation.
-            world_from_midhip = skeleton.keypoint_orienters["MidHip"].w_t_c  # type: np.ndarray
+            world_from_midhip = skeleton.global_keypoint_poses.get("MidHip")  # type: Optional[np.ndarray]
             world_from_rest = world_from_midhip.copy()
             # world_from_rest[0:3, 0:3] = world_from_rest[0:3, 0:3] @ orienter.midhip_from_rest[0:3, 0:3]
-            world_from_rest[0:3, 3] = orienter.w_t_c[0:3, 3]
+            world_from_rest[0:3, 3] = skeleton.global_keypoint_poses[keypoint_name][0:3, 3]
 
             glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT)
             glLineStipple(1, 0xCCCC)
