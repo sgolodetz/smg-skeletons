@@ -18,9 +18,9 @@ class SkeletonRenderer:
     @staticmethod
     def default_lighting_context() -> OpenGLLightingContext:
         """
-        TODO
+        Get the default OpenGL lighting context to use when rendering skeletons.
 
-        :return:    TODO
+        :return:    The default OpenGL lighting context to use when rendering skeletons.
         """
         direction = np.array([0.0, 0.0, 1.0, 0.0])  # type: np.ndarray
         return OpenGLLightingContext({
@@ -54,12 +54,17 @@ class SkeletonRenderer:
 
     @staticmethod
     def render_keypoint_orienters(skeleton: Skeleton) -> None:
+        """
+        Render the keypoint orienters for the specified skeleton (for debugging purposes).
+
+        :param skeleton:    The skeleton.
+        """
+        # For each keypoint orienter the skeleton has:
         for keypoint_name, orienter in skeleton.keypoint_orienters.items():
-            # TODO
+            # Render the associated triangle.
             v0, v1, v2 = orienter.triangle_vertices
 
-            glPushAttrib(GL_CURRENT_BIT | GL_LINE_BIT | GL_POLYGON_BIT)
-            glLineWidth(1)
+            glPushAttrib(GL_CURRENT_BIT | GL_POLYGON_BIT)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             glBegin(GL_TRIANGLES)
 
