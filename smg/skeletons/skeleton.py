@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 import vg
 
@@ -8,12 +7,12 @@ from smg.utility import Cylinder, Shape, Sphere
 
 
 class Skeleton:
-    """A skeleton."""
+    """A 3D skeleton."""
 
     # NESTED TYPES
 
     class Keypoint:
-        """A keypoint (either 2D or 3D)."""
+        """A keypoint."""
 
         # CONSTRUCTOR
 
@@ -22,7 +21,7 @@ class Skeleton:
             Construct a keypoint.
 
             :param name:        The name of the keypoint.
-            :param position:    The position of the keypoint (either 2D or 3D).
+            :param position:    The position of the keypoint.
             :param score:       The score assigned to the keypoint (a float in [0,1]).
             """
             self.__name = name          # type: str
@@ -347,12 +346,17 @@ class Skeleton:
 
     def __compute_local_keypoint_rotations(self) -> None:
         for keypoint_name, orienter in self.keypoint_orienters.items():
+            parent_orienter = None
+            world_from_parent = None
+            world_from_current = None
+
             if orienter.parent_keypoint is not None:
                 parent_keypoint_name = orienter.parent_keypoint.name
-                parent_orienter = self.keypoint_orienters[parent_keypoint_name]
-                world_from_current = self.__global_keypoint_poses[keypoint_name]
-                world_from_parent = self.__global_keypoint_poses[parent_keypoint_name]
+                parent_orienter = self.keypoint_orienters.get(parent_keypoint_name)
+                world_from_current = self.__global_keypoint_poses.get(keypoint_name)
+                world_from_parent = self.__global_keypoint_poses.get(parent_keypoint_name)
 
+            if parent_orienter is not None and world_from_parent is not None and world_from_current is not None:
                 # mTp0 * pTw * wTc * mTc0^-1
                 self.__local_keypoint_rotations[keypoint_name] = \
                     parent_orienter.midhip_from_rest @ \
@@ -364,11 +368,13 @@ class Skeleton:
 
     def __try_add_keypoint_orienter(self, primary_keypoint_name: str, secondary_keypoint_name: str,
                                     parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str],
-                                    midhip_from_rest: Optional[np.ndarray] = None) \
-            -> None:
+                                    midhip_from_rest: Optional[np.ndarray] = None) -> None:
         for name in [primary_keypoint_name, secondary_keypoint_name, *triangle]:
             if self.__keypoints.get(name) is None:
                 return
+
+        if parent_keypoint_name is not None and self.__keypoints.get(parent_keypoint_name) is None:
+            return
 
         if midhip_from_rest is None:
             midhip_from_rest = np.eye(3)
