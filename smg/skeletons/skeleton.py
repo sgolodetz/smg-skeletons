@@ -75,37 +75,75 @@ class Skeleton:
 
         def __init__(self, skeleton: "Skeleton", primary_keypoint_name: str, secondary_keypoint_name: str,
                      parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str], midhip_from_rest: np.ndarray):
+            """
+            TODO
+
+            :param skeleton:                TODO
+            :param primary_keypoint_name:   TODO
+            :param secondary_keypoint_name: TODO
+            :param parent_keypoint_name:    TODO
+            :param triangle:                TODO
+            :param midhip_from_rest:        TODO
+            """
             self.__skeleton = skeleton                                                      # type: Skeleton
+
             self.__primary_keypoint = self.__skeleton.keypoints[primary_keypoint_name]      # type: Skeleton.Keypoint
             self.__secondary_keypoint = self.__skeleton.keypoints[secondary_keypoint_name]  # type: Skeleton.Keypoint
             self.__parent_keypoint = self.__skeleton.keypoints[parent_keypoint_name] \
                 if parent_keypoint_name is not None else None  # type: Optional[Skeleton.Keypoint]
+
             self.__triangle = triangle                                                      # type: Tuple[str, str, str]
             self.__triangle_keypoints = tuple(
                 [self.__skeleton.keypoints[name] for name in self.__triangle]
             )  # type: Tuple[Skeleton.Keypoint, Skeleton.Keypoint, Skeleton.Keypoint]
+
             self.__midhip_from_rest = midhip_from_rest                                      # type: np.ndarray
 
         # PROPERTIES
 
         @property
         def midhip_from_rest(self) -> np.ndarray:
+            """
+            TODO
+
+            :return:    TODO
+            """
             return self.__midhip_from_rest
 
         @property
         def parent_keypoint(self) -> Optional["Skeleton.Keypoint"]:
+            """
+            TODO
+
+            :return:    TODO
+            """
             return self.__parent_keypoint
 
         @property
         def primary_keypoint(self) -> "Skeleton.Keypoint":
+            """
+            TODO
+
+            :return:    TODO
+            """
             return self.__primary_keypoint
 
         @property
         def secondary_keypoint(self) -> "Skeleton.Keypoint":
+            """
+            TODO
+
+            :return:    TODO
+            """
             return self.__secondary_keypoint
 
         @property
         def triangle_vertices(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+            """
+            TODO
+
+            :return:    TODO
+            """
             # noinspection PyTypeChecker
             return tuple([keypoint.position for keypoint in self.__triangle_keypoints])
 
