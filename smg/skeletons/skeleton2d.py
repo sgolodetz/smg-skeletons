@@ -3,7 +3,7 @@ import numpy as np
 from typing import Dict, List, Tuple
 
 
-class Skeleton2d:
+class Skeleton2D:
     """A 2D skeleton."""
 
     # NESTED TYPES
@@ -73,7 +73,7 @@ class Skeleton2d:
         :param keypoints:       The keypoints that have been detected for the skeleton.
         :param keypoint_pairs:  Pairs of names denoting keypoints that should be joined by bones.
         """
-        self.__keypoints = keypoints  # type: Dict[str, Skeleton2d.Keypoint]
+        self.__keypoints = keypoints  # type: Dict[str, Skeleton2D.Keypoint]
 
         # Filter the pairs of names, keeping only those for which both keypoints have been detected.
         self.__keypoint_pairs = [
@@ -88,7 +88,7 @@ class Skeleton2d:
 
         :return:    A string representation of the skeleton.
         """
-        return "Skeleton2d({}, {})".format(repr(self.__keypoints), repr(self.__keypoint_pairs))
+        return "Skeleton2D({}, {})".format(repr(self.__keypoints), repr(self.__keypoint_pairs))
 
     # PROPERTIES
 

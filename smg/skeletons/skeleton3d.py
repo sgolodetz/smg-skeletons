@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple
 from smg.utility import Cylinder, Shape, Sphere
 
 
-class Skeleton:
+class Skeleton3D:
     """A 3D skeleton."""
 
     # NESTED TYPES
@@ -72,7 +72,7 @@ class Skeleton:
 
         # CONSTRUCTOR
 
-        def __init__(self, skeleton: "Skeleton", primary_keypoint_name: str, secondary_keypoint_name: str,
+        def __init__(self, skeleton: "Skeleton3D", primary_keypoint_name: str, secondary_keypoint_name: str,
                      parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str], midhip_from_rest: np.ndarray):
             """
             TODO
@@ -84,17 +84,17 @@ class Skeleton:
             :param triangle:                TODO
             :param midhip_from_rest:        TODO
             """
-            self.__skeleton = skeleton                                                      # type: Skeleton
+            self.__skeleton = skeleton                                                      # type: Skeleton3D
 
-            self.__primary_keypoint = self.__skeleton.keypoints[primary_keypoint_name]      # type: Skeleton.Keypoint
-            self.__secondary_keypoint = self.__skeleton.keypoints[secondary_keypoint_name]  # type: Skeleton.Keypoint
+            self.__primary_keypoint = self.__skeleton.keypoints[primary_keypoint_name]      # type: Skeleton3D.Keypoint
+            self.__secondary_keypoint = self.__skeleton.keypoints[secondary_keypoint_name]  # type: Skeleton3D.Keypoint
             self.__parent_keypoint = self.__skeleton.keypoints[parent_keypoint_name] \
-                if parent_keypoint_name is not None else None  # type: Optional[Skeleton.Keypoint]
+                if parent_keypoint_name is not None else None  # type: Optional[Skeleton3D.Keypoint]
 
             self.__triangle = triangle                                                      # type: Tuple[str, str, str]
             self.__triangle_keypoints = tuple(
                 [self.__skeleton.keypoints[name] for name in self.__triangle]
-            )  # type: Tuple[Skeleton.Keypoint, Skeleton.Keypoint, Skeleton.Keypoint]
+            )  # type: Tuple[Skeleton3D.Keypoint, Skeleton3D.Keypoint, Skeleton3D.Keypoint]
 
             self.__midhip_from_rest = midhip_from_rest                                      # type: np.ndarray
 
@@ -110,7 +110,7 @@ class Skeleton:
             return self.__midhip_from_rest
 
         @property
-        def parent_keypoint(self) -> Optional["Skeleton.Keypoint"]:
+        def parent_keypoint(self) -> Optional["Skeleton3D.Keypoint"]:
             """
             TODO
 
@@ -119,7 +119,7 @@ class Skeleton:
             return self.__parent_keypoint
 
         @property
-        def primary_keypoint(self) -> "Skeleton.Keypoint":
+        def primary_keypoint(self) -> "Skeleton3D.Keypoint":
             """
             TODO
 
@@ -128,7 +128,7 @@ class Skeleton:
             return self.__primary_keypoint
 
         @property
-        def secondary_keypoint(self) -> "Skeleton.Keypoint":
+        def secondary_keypoint(self) -> "Skeleton3D.Keypoint":
             """
             TODO
 
@@ -155,7 +155,7 @@ class Skeleton:
         :param keypoints:       The keypoints that have been detected for the skeleton.
         :param keypoint_pairs:  Pairs of names denoting keypoints that should be joined by bones.
         """
-        self.__keypoints = keypoints  # type: Dict[str, Skeleton.Keypoint]
+        self.__keypoints = keypoints  # type: Dict[str, Skeleton3D.Keypoint]
 
         # Filter the pairs of names, keeping only those for which both keypoints have been detected.
         self.__keypoint_pairs = [
@@ -167,7 +167,7 @@ class Skeleton:
         self.__add_bounding_shapes()
 
         # Construct a set of keypoint orienters for the skeleton.
-        self.__keypoint_orienters = {}  # type: Dict[str, Skeleton.KeypointOrienter]
+        self.__keypoint_orienters = {}  # type: Dict[str, Skeleton3D.KeypointOrienter]
         self.__add_keypoint_orienters()
 
         # TODO
@@ -186,7 +186,7 @@ class Skeleton:
 
         :return:    A string representation of the skeleton.
         """
-        return "Skeleton({}, {})".format(repr(self.__keypoints), repr(self.__keypoint_pairs))
+        return "Skeleton3D({}, {})".format(repr(self.__keypoints), repr(self.__keypoint_pairs))
 
     # PROPERTIES
 
@@ -257,8 +257,8 @@ class Skeleton:
         self.__add_cylinder_for_bone("RKnee", "RAnkle", 0.15, top_stretch=1.5)
         self.__add_cylinder_for_bone("RShoulder", "RElbow", 0.2, top_stretch=1.5)
 
-        neck_keypoint = self.__keypoints.get("Neck")  # type: Optional[Skeleton.Keypoint]
-        nose_keypoint = self.__keypoints.get("Nose")  # type: Optional[Skeleton.Keypoint]
+        neck_keypoint = self.__keypoints.get("Neck")  # type: Optional[Skeleton3D.Keypoint]
+        nose_keypoint = self.__keypoints.get("Nose")  # type: Optional[Skeleton3D.Keypoint]
         if neck_keypoint is not None and nose_keypoint is not None:
             neck_pos, nose_pos = neck_keypoint.position, nose_keypoint.position
             self.__bounding_shapes.append(Sphere(centre=nose_pos, radius=1.25 * np.linalg.norm(nose_pos - neck_pos)))
@@ -279,8 +279,8 @@ class Skeleton:
         if top_radius is None:
             top_radius = base_radius
 
-        base_keypoint = self.__keypoints.get(base_keypoint_name)  # type: Optional[Skeleton.Keypoint]
-        top_keypoint = self.__keypoints.get(top_keypoint_name)    # type: Optional[Skeleton.Keypoint]
+        base_keypoint = self.__keypoints.get(base_keypoint_name)  # type: Optional[Skeleton3D.Keypoint]
+        top_keypoint = self.__keypoints.get(top_keypoint_name)    # type: Optional[Skeleton3D.Keypoint]
 
         if base_keypoint is not None and top_keypoint is not None:
             self.__bounding_shapes.append(Cylinder(
@@ -379,6 +379,6 @@ class Skeleton:
         if midhip_from_rest is None:
             midhip_from_rest = np.eye(3)
 
-        self.__keypoint_orienters[primary_keypoint_name] = Skeleton.KeypointOrienter(
+        self.__keypoint_orienters[primary_keypoint_name] = Skeleton3D.KeypointOrienter(
             self, primary_keypoint_name, secondary_keypoint_name, parent_keypoint_name, triangle, midhip_from_rest
         )

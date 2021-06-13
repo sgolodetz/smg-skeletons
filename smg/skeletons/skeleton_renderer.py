@@ -7,7 +7,7 @@ from smg.opengl import CameraRenderer, OpenGLLightingContext, OpenGLUtil, ShapeR
 from smg.rigging.helpers import CameraPoseConverter
 from smg.utility import ShapeUtil
 
-from .skeleton import Skeleton
+from .skeleton3d import Skeleton3D
 
 
 class SkeletonRenderer:
@@ -29,7 +29,7 @@ class SkeletonRenderer:
         })
 
     @staticmethod
-    def render_bounding_shapes(skeleton: Skeleton) -> None:
+    def render_bounding_shapes(skeleton: Skeleton3D) -> None:
         """
         Render the specified 3D skeleton's bounding shapes using OpenGL.
 
@@ -40,7 +40,7 @@ class SkeletonRenderer:
             shape.accept(shape_renderer)
 
     @staticmethod
-    def render_bounding_voxels(skeleton: Skeleton, *, voxel_size: float) -> None:
+    def render_bounding_voxels(skeleton: Skeleton3D, *, voxel_size: float) -> None:
         """
         Render the voxels touched by the bounding shapes of the specified 3D skeleton using OpenGL.
 
@@ -53,7 +53,7 @@ class SkeletonRenderer:
             OpenGLUtil.render_aabb(voxel_centre - offset, voxel_centre + offset)
 
     @staticmethod
-    def render_keypoint_orienters(skeleton: Skeleton) -> None:
+    def render_keypoint_orienters(skeleton: Skeleton3D) -> None:
         """
         Render the keypoint orienters for the specified skeleton (for debugging purposes).
 
@@ -108,7 +108,7 @@ class SkeletonRenderer:
             glPopAttrib()
 
     @staticmethod
-    def render_skeleton(skeleton: Skeleton) -> None:
+    def render_skeleton(skeleton: Skeleton3D) -> None:
         """
         Render the specified 3D skeleton using OpenGL.
 
@@ -150,7 +150,7 @@ class SkeletonRenderer:
 
         # Render the bones between the keypoints.
         for keypoint1, keypoint2 in skeleton.bones:
-            bone_key = Skeleton.make_bone_key(keypoint1, keypoint2)  # type: Tuple[str, str]
+            bone_key = Skeleton3D.make_bone_key(keypoint1, keypoint2)  # type: Tuple[str, str]
             bone_colour = bone_colours.get(bone_key)                 # type: Optional[np.ndarray]
             if bone_colour is not None:
                 # Note: We divide by 153 because that's the maximum value of a component in the colours table,
