@@ -59,6 +59,11 @@ class SkeletonRenderer:
 
         :param skeleton:    The skeleton.
         """
+        # Try to get the current pose of the mid-hip keypoint. If this isn't possible, early out.
+        world_from_midhip = skeleton.global_keypoint_poses.get("MidHip")  # type: Optional[np.ndarray]
+        if world_from_midhip is None:
+            return
+
         # For each keypoint orienter the skeleton has:
         for keypoint_name, orienter in skeleton.keypoint_orienters.items():
             # Render the associated triangle.
@@ -91,9 +96,8 @@ class SkeletonRenderer:
             glPopAttrib()
 
             # Render the rest orientation of the associated keypoint at its current position, to enable comparison.
-            world_from_midhip = skeleton.global_keypoint_poses.get("MidHip")  # type: Optional[np.ndarray]
-            world_from_rest = np.eye(4)                                       # type: np.ndarray
-            world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ orienter.midhip_from_rest[0:3, 0:3]
+            world_from_rest = np.eye(4)  # type: np.ndarray
+            world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ orienter.midhip_from_rest
             world_from_rest[0:3, 3] = skeleton.global_keypoint_poses[keypoint_name][0:3, 3]
 
             glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT)
