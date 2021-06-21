@@ -109,17 +109,3 @@ class Skeleton2D:
         :return:    The detected keypoints of the skeleton, as a keypoint name -> keypoint map.
         """
         return self.__keypoints
-
-    # PUBLIC STATIC METHODS
-
-    @staticmethod
-    def make_bone_key(keypoint1: Keypoint, keypoint2: Keypoint) -> Tuple[str, str]:
-        """
-        Make a key that can be used to look up a bone in a dictionary.
-
-        :param keypoint1:   The keypoint at one end of the bone.
-        :param keypoint2:   The keypoint at the other end of the bone.
-        :return:            The key for the bone.
-        """
-        # noinspection PyTypeChecker
-        return tuple(sorted([keypoint1.name, keypoint2.name]))
