@@ -141,16 +141,13 @@ class Skeleton3D:
         self.__bounding_shapes = []  # type: List[Shape]
         self.__add_bounding_shapes()
 
-        # Try to add orienters for relevant keypoints in the skeleton.
-        self.__keypoint_orienters = {}  # type: Dict[str, Skeleton3D.KeypointOrienter]
-        self.__try_add_keypoint_orienters()
-
-        # Compute the global poses for the keypoints that have orienters.
-        self.__global_keypoint_poses = {}  # type: Dict[str, np.ndarray]
-        self.__compute_global_keypoint_poses()
-
-        # Compute the local rotations for the keypoints that have orienters.
+        # Try to compute global poses and local rotations for relevant keypoints in the skeleton.
+        self.__keypoint_orienters = {}        # type: Dict[str, Skeleton3D.KeypointOrienter]
+        self.__global_keypoint_poses = {}     # type: Dict[str, np.ndarray]
         self.__local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
+
+        self.__try_add_keypoint_orienters()
+        self.__compute_global_keypoint_poses()
         self.__compute_local_keypoint_rotations()
 
     # SPECIAL METHODS
