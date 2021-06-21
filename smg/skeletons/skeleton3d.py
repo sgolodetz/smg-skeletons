@@ -20,9 +20,9 @@ class Skeleton3D:
         As its name suggests, a keypoint orienter is used to specify the orientation of a keypoint (i.e. find a set
         of xyz coordinate axes for the keypoint). The y axis is defined so as to point from the keypoint of interest
         to a separate keypoint. The z axis is defined to be perpendicular to the y axis and as much as possible in
-        the direction of the normal of a triangle whose vertices are three of the keypoints. The x axis is defined
-        to be cross(y, z). In practice, if the unit normal of the triangle is n, we compute x = cross(y, n) and
-        z = cross(x, y). This means that n can't point in the same direction as y: we ensure this by construction.
+        the direction of the normal of a triangle whose vertices are three of the keypoints. In practice, if the
+        unit normal of the triangle is n, we compute x = cross(y, n) and z = cross(x, y). This means that n can't
+        point in the same direction as y: we ensure this by construction.
         """
 
         # CONSTRUCTOR
@@ -71,15 +71,6 @@ class Skeleton3D:
             return self.__keypoint
 
         @property
-        def other_keypoint(self) -> Keypoint:
-            """
-            Get the other keypoint defining the direction of the y axis.
-
-            :return:    The other keypoint defining the direction of the y axis.
-            """
-            return self.__other_keypoint
-
-        @property
         def midhip_from_rest(self) -> np.ndarray:
             """
             Get a 3*3 rotation matrix specifying the transformation from the orientation of the keypoint of interest
@@ -88,6 +79,15 @@ class Skeleton3D:
             :return:    The 3*3 rotation matrix as specified.
             """
             return self.__midhip_from_rest
+
+        @property
+        def other_keypoint(self) -> Keypoint:
+            """
+            Get the other keypoint defining the direction of the y axis.
+
+            :return:    The other keypoint defining the direction of the y axis.
+            """
+            return self.__other_keypoint
 
         @property
         def parent_keypoint(self) -> Optional[Keypoint]:
@@ -185,10 +185,20 @@ class Skeleton3D:
 
     @property
     def global_keypoint_poses(self) -> Dict[str, np.ndarray]:
+        """
+        TODO
+
+        :return:    TODO
+        """
         return self.__global_keypoint_poses
 
     @property
     def keypoint_orienters(self) -> Dict[str, KeypointOrienter]:
+        """
+        TODO
+
+        :return:    TODO
+        """
         return self.__keypoint_orienters
 
     @property
@@ -202,6 +212,11 @@ class Skeleton3D:
 
     @property
     def local_keypoint_rotations(self) -> Dict[str, np.ndarray]:
+        """
+        TODO
+
+        :return:    TODO
+        """
         return self.__local_keypoint_rotations
 
     # PUBLIC STATIC METHODS
