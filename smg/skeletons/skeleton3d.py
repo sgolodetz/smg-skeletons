@@ -5,67 +5,13 @@ from typing import Dict, List, Optional, Tuple
 
 from smg.utility import Cylinder, Shape, Sphere
 
+from .keypoint import Keypoint
+
 
 class Skeleton3D:
     """A 3D skeleton."""
 
     # NESTED TYPES
-
-    class Keypoint:
-        """A keypoint."""
-
-        # CONSTRUCTOR
-
-        def __init__(self, name: str, position: np.ndarray, score: float = 1.0):
-            """
-            Construct a keypoint.
-
-            :param name:        The name of the keypoint.
-            :param position:    The position of the keypoint.
-            :param score:       The score assigned to the keypoint (a float in [0,1]).
-            """
-            self.__name = name          # type: str
-            self.__position = position  # type: np.ndarray
-            self.__score = score        # type: float
-
-        # SPECIAL METHODS
-
-        def __repr__(self) -> str:
-            """
-            Get a string representation of the keypoint.
-
-            :return:    A string representation of the keypoint.
-            """
-            return "Keypoint({}, {}, {})".format(repr(self.__name), repr(self.__position), repr(self.__score))
-
-        # PROPERTIES
-
-        @property
-        def name(self) -> str:
-            """
-            Get the name of the keypoint.
-
-            :return:    The name of the keypoint.
-            """
-            return self.__name
-
-        @property
-        def position(self) -> np.ndarray:
-            """
-            Get the position of the keypoint.
-
-            :return:    The position of the keypoint.
-            """
-            return self.__position
-
-        @property
-        def score(self) -> float:
-            """
-            Get the score assigned to the keypoint.
-
-            :return:    The score assigned to the keypoint (a float in [0,1]).
-            """
-            return self.__score
 
     class KeypointOrienter:
         """
@@ -103,20 +49,20 @@ class Skeleton3D:
             self.__triangle = triangle                                 # type: Tuple[str, str, str]
 
             # Look up the various keypoints.
-            self.__keypoint = self.__skeleton.keypoints[keypoint_name]              # type: Skeleton3D.Keypoint
-            self.__other_keypoint = self.__skeleton.keypoints[other_keypoint_name]  # type: Skeleton3D.Keypoint
+            self.__keypoint = self.__skeleton.keypoints[keypoint_name]              # type: Keypoint
+            self.__other_keypoint = self.__skeleton.keypoints[other_keypoint_name]  # type: Keypoint
 
             self.__parent_keypoint = self.__skeleton.keypoints[parent_keypoint_name] \
-                if parent_keypoint_name is not None else None  # type: Optional[Skeleton3D.Keypoint]
+                if parent_keypoint_name is not None else None  # type: Optional[Keypoint]
 
             self.__triangle_keypoints = tuple(
                 [self.__skeleton.keypoints[name] for name in self.__triangle]
-            )  # type: Tuple[Skeleton3D.Keypoint, Skeleton3D.Keypoint, Skeleton3D.Keypoint]
+            )  # type: Tuple[Keypoint, Keypoint, Keypoint]
 
         # PROPERTIES
 
         @property
-        def keypoint(self) -> "Skeleton3D.Keypoint":
+        def keypoint(self) -> Keypoint:
             """
             Get the keypoint of interest.
 
@@ -125,7 +71,7 @@ class Skeleton3D:
             return self.__keypoint
 
         @property
-        def other_keypoint(self) -> "Skeleton3D.Keypoint":
+        def other_keypoint(self) -> Keypoint:
             """
             Get the other keypoint defining the direction of the y axis.
 
@@ -144,7 +90,7 @@ class Skeleton3D:
             return self.__midhip_from_rest
 
         @property
-        def parent_keypoint(self) -> Optional["Skeleton3D.Keypoint"]:
+        def parent_keypoint(self) -> Optional[Keypoint]:
             """
             Get the parent keypoint in the skeleton (if any) of the keypoint of interest.
 
@@ -184,7 +130,7 @@ class Skeleton3D:
         :param keypoints:       The keypoints that have been detected for the skeleton.
         :param keypoint_pairs:  Pairs of names denoting keypoints that should be joined by bones.
         """
-        self.__keypoints = keypoints  # type: Dict[str, Skeleton3D.Keypoint]
+        self.__keypoints = keypoints  # type: Dict[str, Keypoint]
 
         # Filter the pairs of names, keeping only those for which both keypoints have been detected.
         self.__keypoint_pairs = [
@@ -286,8 +232,8 @@ class Skeleton3D:
         self.__add_cylinder_for_bone("RKnee", "RAnkle", 0.15, top_stretch=1.5)
         self.__add_cylinder_for_bone("RShoulder", "RElbow", 0.2, top_stretch=1.5)
 
-        neck_keypoint = self.__keypoints.get("Neck")  # type: Optional[Skeleton3D.Keypoint]
-        nose_keypoint = self.__keypoints.get("Nose")  # type: Optional[Skeleton3D.Keypoint]
+        neck_keypoint = self.__keypoints.get("Neck")  # type: Optional[Keypoint]
+        nose_keypoint = self.__keypoints.get("Nose")  # type: Optional[Keypoint]
         if neck_keypoint is not None and nose_keypoint is not None:
             neck_pos, nose_pos = neck_keypoint.position, nose_keypoint.position
             self.__bounding_shapes.append(Sphere(centre=nose_pos, radius=1.25 * np.linalg.norm(nose_pos - neck_pos)))
@@ -308,8 +254,8 @@ class Skeleton3D:
         if top_radius is None:
             top_radius = base_radius
 
-        base_keypoint = self.__keypoints.get(base_keypoint_name)  # type: Optional[Skeleton3D.Keypoint]
-        top_keypoint = self.__keypoints.get(top_keypoint_name)    # type: Optional[Skeleton3D.Keypoint]
+        base_keypoint = self.__keypoints.get(base_keypoint_name)  # type: Optional[Keypoint]
+        top_keypoint = self.__keypoints.get(top_keypoint_name)    # type: Optional[Keypoint]
 
         if base_keypoint is not None and top_keypoint is not None:
             self.__bounding_shapes.append(Cylinder(
