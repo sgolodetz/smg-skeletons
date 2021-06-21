@@ -186,18 +186,18 @@ class Skeleton3D:
     @property
     def global_keypoint_poses(self) -> Dict[str, np.ndarray]:
         """
-        TODO
+        Get the global poses for any keypoints for which they have been calculated.
 
-        :return:    TODO
+        :return:    The global poses for any keypoints for which they have been calculated.
         """
         return self.__global_keypoint_poses
 
     @property
     def keypoint_orienters(self) -> Dict[str, KeypointOrienter]:
         """
-        TODO
+        Get the skeleton's keypoint orienters.
 
-        :return:    TODO
+        :return:    The skeleton's keypoint orienters.
         """
         return self.__keypoint_orienters
 
@@ -213,9 +213,9 @@ class Skeleton3D:
     @property
     def local_keypoint_rotations(self) -> Dict[str, np.ndarray]:
         """
-        TODO
+        Get the local rotations for any keypoints for which they have been calculated.
 
-        :return:    TODO
+        :return:    The local rotations for any keypoints for which they have been calculated.
         """
         return self.__local_keypoint_rotations
 
