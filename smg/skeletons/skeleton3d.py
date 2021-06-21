@@ -136,9 +136,10 @@ class Skeleton3D:
         @property
         def midhip_from_rest(self) -> np.ndarray:
             """
-            TODO
+            Get a 3*3 rotation matrix specifying the transformation from the orientation of the keypoint of interest
+            to the orientation of the mid-hip keypoint when the skeleton is in its rest pose.
 
-            :return:    TODO
+            :return:    The 3*3 rotation matrix as specified.
             """
             return self.__midhip_from_rest
 
@@ -154,9 +155,10 @@ class Skeleton3D:
         @property
         def rest_from_midhip(self) -> np.ndarray:
             """
-            TODO
+            Get a 3*3 rotation matrix specifying the transformation from the orientation of the mid-hip keypoint
+            to the orientation of the keypoint of interest when the skeleton is in its rest pose.
 
-            :return:    TODO
+            :return:    The 3*3 rotation matrix as specified.
             """
             return self.__rest_from_midhip
 
