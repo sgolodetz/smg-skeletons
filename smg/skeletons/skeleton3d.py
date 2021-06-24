@@ -123,12 +123,16 @@ class Skeleton3D:
 
     # CONSTRUCTOR
 
-    def __init__(self, keypoints: Dict[str, Keypoint], keypoint_pairs: List[Tuple[str, str]]):
+    def __init__(self, keypoints: Dict[str, Keypoint], keypoint_pairs: List[Tuple[str, str]],
+                 global_keypoint_poses: Optional[Dict[str, np.ndarray]] = None,
+                 local_keypoint_rotations: Optional[Dict[str, np.ndarray]] = None):
         """
         Construct a skeleton.
 
-        :param keypoints:       The keypoints that have been detected for the skeleton.
-        :param keypoint_pairs:  Pairs of names denoting keypoints that should be joined by bones.
+        :param keypoints:                   The keypoints that have been detected for the skeleton.
+        :param keypoint_pairs:              Pairs of names denoting keypoints that should be joined by bones.
+        :param global_keypoint_poses:       TODO
+        :param local_keypoint_rotations:    TODO
         """
         self.__keypoints = keypoints  # type: Dict[str, Keypoint]
 
@@ -141,14 +145,21 @@ class Skeleton3D:
         self.__bounding_shapes = []  # type: List[Shape]
         self.__add_bounding_shapes()
 
-        # Try to compute global poses and local rotations for relevant keypoints in the skeleton.
-        self.__keypoint_orienters = {}        # type: Dict[str, Skeleton3D.KeypointOrienter]
-        self.__global_keypoint_poses = {}     # type: Dict[str, np.ndarray]
-        self.__local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
+        # TODO
+        if global_keypoint_poses and local_keypoint_rotations:
+            # TODO
+            self.__keypoint_orienters = {}                              # type: Dict[str, Skeleton3D.KeypointOrienter]
+            self.__global_keypoint_poses = global_keypoint_poses        # type: Dict[str, np.ndarray]
+            self.__local_keypoint_rotations = local_keypoint_rotations  # type: Dict[str, np.ndarray]
+        else:
+            # Try to compute global poses and local rotations for relevant keypoints in the skeleton.
+            self.__keypoint_orienters = {}        # type: Dict[str, Skeleton3D.KeypointOrienter]
+            self.__global_keypoint_poses = {}     # type: Dict[str, np.ndarray]
+            self.__local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
 
-        self.__try_add_keypoint_orienters()
-        self.__compute_global_keypoint_poses()
-        self.__compute_local_keypoint_rotations()
+            self.__try_add_keypoint_orienters()
+            self.__compute_global_keypoint_poses()
+            self.__compute_local_keypoint_rotations()
 
     # SPECIAL METHODS
 
@@ -158,7 +169,12 @@ class Skeleton3D:
 
         :return:    A string representation of the skeleton.
         """
-        return "Skeleton3D({}, {})".format(repr(self.__keypoints), repr(self.__keypoint_pairs))
+        return "Skeleton3D({}, {}, {}, {})".format(
+            repr(self.__keypoints),
+            repr(self.__keypoint_pairs),
+            repr(self.__global_keypoint_poses),
+            repr(self.__local_keypoint_rotations)
+        )
 
     # PROPERTIES
 
@@ -229,6 +245,19 @@ class Skeleton3D:
         """
         # noinspection PyTypeChecker
         return tuple(sorted([keypoint1.name, keypoint2.name]))
+
+    # PUBLIC METHODS
+
+    def make_bare(self) -> "Skeleton3D":
+        """
+        TODO
+
+        :return:    TODO
+        """
+        self.__keypoint_orienters = {}
+        self.__global_keypoint_poses = {}
+        self.__local_keypoint_rotations = {}
+        return self
 
     # PRIVATE METHODS
 
