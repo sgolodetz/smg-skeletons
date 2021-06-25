@@ -129,10 +129,14 @@ class Skeleton3D:
         """
         Construct a skeleton.
 
+        .. note::
+            If either the global keypoint poses or the local keypoint rotations are either None or {},
+            then the orientations of the keypoints will be computed internally.
+
         :param keypoints:                   The keypoints that have been detected for the skeleton.
         :param keypoint_pairs:              Pairs of names denoting keypoints that should be joined by bones.
-        :param global_keypoint_poses:       TODO
-        :param local_keypoint_rotations:    TODO
+        :param global_keypoint_poses:       The global poses of relevant keypoints in the skeleton (optional).
+        :param local_keypoint_rotations:    The local rotations of relevant keypoints in the skeleton (optional).
         """
         self.__keypoints = keypoints  # type: Dict[str, Keypoint]
 
@@ -145,14 +149,14 @@ class Skeleton3D:
         self.__bounding_shapes = []  # type: List[Shape]
         self.__add_bounding_shapes()
 
-        # TODO
+        # If both global keypoint poses and local keypoint rotations have been provided from outside, use them.
         if global_keypoint_poses and local_keypoint_rotations:
-            # TODO
             self.__keypoint_orienters = {}                              # type: Dict[str, Skeleton3D.KeypointOrienter]
             self.__global_keypoint_poses = global_keypoint_poses        # type: Dict[str, np.ndarray]
             self.__local_keypoint_rotations = local_keypoint_rotations  # type: Dict[str, np.ndarray]
+
+        # Otherwise, try to compute global poses and local rotations for relevant keypoints in the skeleton.
         else:
-            # Try to compute global poses and local rotations for relevant keypoints in the skeleton.
             self.__keypoint_orienters = {}        # type: Dict[str, Skeleton3D.KeypointOrienter]
             self.__global_keypoint_poses = {}     # type: Dict[str, np.ndarray]
             self.__local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
@@ -250,9 +254,14 @@ class Skeleton3D:
 
     def make_bare(self) -> "Skeleton3D":
         """
-        TODO
+        Remove the keypoint orientation information from the skeleton.
 
-        :return:    TODO
+        .. note::
+            This is useful when we want to transmit a skeleton across a network but have its keypoint orientation
+            information be recomputed at the remote end. (In particular, if no keypoint orientation information is
+            present when the skeleton reaches the remote end, it will be recomputed.)
+
+        :return:    The skeleton, after removing its keypoint orientation information.
         """
         self.__keypoint_orienters = {}
         self.__global_keypoint_poses = {}
@@ -307,7 +316,8 @@ class Skeleton3D:
             ))
 
     def __compute_global_keypoint_poses(self) -> None:
-        """Compute the global poses for the keypoints (as keypoint space to world space transformations)."""
+        """Compute the global poses for relevant keypoints (as keypoint space to world space transformations)."""
+        # For each keypoint with an orienter:
         for keypoint_name, orienter in self.keypoint_orienters.items():
             v0, v1, v2 = orienter.triangle_vertices
 
@@ -324,7 +334,7 @@ class Skeleton3D:
             self.__global_keypoint_poses[keypoint_name] = w_t_c
 
     def __compute_local_keypoint_rotations(self) -> None:
-        """Compute the local rotations for the keypoints (needed for avatar driving)."""
+        """Compute the local rotations for relevant keypoints (needed for avatar driving)."""
         # For each keypoint with an orienter:
         for keypoint_name, orienter in self.keypoint_orienters.items():
             parent_orienter = None     # type: Optional[Skeleton3D.KeypointOrienter]
@@ -391,7 +401,7 @@ class Skeleton3D:
         )
 
     def __try_add_keypoint_orienters(self) -> None:
-        """Try to add the orienters for the keypoints to the skeleton."""
+        """Try to add orienters for relevant keypoints to the skeleton."""
         self.__try_add_keypoint_orienter(
             "LElbow", "LWrist", "LShoulder", ("LElbow", "LHip", "LWrist"),
             np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
