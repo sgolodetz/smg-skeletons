@@ -3,10 +3,11 @@ import numpy as np
 from OpenGL.GL import *
 from typing import Dict, List, Optional, Tuple
 
-from smg.opengl import OpenGLUtil, ShapeRenderer
+from smg.opengl import CameraRenderer, OpenGLLightingContext, OpenGLUtil, ShapeRenderer
+from smg.rigging.helpers import CameraPoseConverter
 from smg.utility import ShapeUtil
 
-from .skeleton import Skeleton
+from .skeleton3d import Skeleton3D
 
 
 class SkeletonRenderer:
@@ -15,7 +16,20 @@ class SkeletonRenderer:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def render_bounding_shapes(skeleton: Skeleton) -> None:
+    def default_lighting_context() -> OpenGLLightingContext:
+        """
+        Get the default OpenGL lighting context to use when rendering skeletons.
+
+        :return:    The default OpenGL lighting context to use when rendering skeletons.
+        """
+        direction = np.array([0.0, 0.0, 1.0, 0.0])  # type: np.ndarray
+        return OpenGLLightingContext({
+            0: OpenGLLightingContext.DirectionalLight(direction),
+            1: OpenGLLightingContext.DirectionalLight(-direction),
+        })
+
+    @staticmethod
+    def render_bounding_shapes(skeleton: Skeleton3D) -> None:
         """
         Render the specified 3D skeleton's bounding shapes using OpenGL.
 
@@ -26,7 +40,7 @@ class SkeletonRenderer:
             shape.accept(shape_renderer)
 
     @staticmethod
-    def render_bounding_voxels(skeleton: Skeleton, *, voxel_size: float) -> None:
+    def render_bounding_voxels(skeleton: Skeleton3D, *, voxel_size: float) -> None:
         """
         Render the voxels touched by the bounding shapes of the specified 3D skeleton using OpenGL.
 
@@ -39,7 +53,65 @@ class SkeletonRenderer:
             OpenGLUtil.render_aabb(voxel_centre - offset, voxel_centre + offset)
 
     @staticmethod
-    def render_skeleton(skeleton: Skeleton) -> None:
+    def render_keypoint_orienters(skeleton: Skeleton3D) -> None:
+        """
+        Render the keypoint orienters for the specified skeleton (for debugging purposes).
+
+        :param skeleton:    The skeleton.
+        """
+        # Try to get the current pose of the mid-hip keypoint. If this isn't possible, early out.
+        world_from_midhip = skeleton.global_keypoint_poses.get("MidHip")  # type: Optional[np.ndarray]
+        if world_from_midhip is None:
+            return
+
+        # For each keypoint orienter the skeleton has:
+        for keypoint_name, orienter in skeleton.keypoint_orienters.items():
+            # Render the associated triangle.
+            v0, v1, v2 = orienter.triangle_vertices
+
+            glPushAttrib(GL_CURRENT_BIT | GL_POLYGON_BIT)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            glBegin(GL_TRIANGLES)
+
+            glColor3f(1.0, 0.0, 0.0)
+            glVertex3f(*v0)
+            glColor3f(0.0, 1.0, 0.0)
+            glVertex3f(*v1)
+            glColor3f(0.0, 0.0, 1.0)
+            glVertex3f(*v2)
+
+            glEnd()
+            glPopAttrib()
+
+            # Render the current pose of the associated keypoint.
+            world_from_current = skeleton.global_keypoint_poses[keypoint_name]  # type: np.ndarray
+
+            glPushAttrib(GL_LINE_BIT)
+            glLineWidth(2)
+
+            CameraRenderer.render_camera(
+                CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_current)), axis_scale=0.1
+            )
+
+            glPopAttrib()
+
+            # Render the rest orientation of the associated keypoint at its current position, to enable comparison.
+            world_from_rest = skeleton.global_keypoint_poses[keypoint_name].copy()  # type: np.ndarray
+            world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ orienter.midhip_from_rest
+
+            glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT)
+            glLineStipple(1, 0xCCCC)
+            glEnable(GL_LINE_STIPPLE)
+            glLineWidth(2)
+
+            CameraRenderer.render_camera(
+                CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_rest)), axis_scale=0.1
+            )
+
+            glPopAttrib()
+
+    @staticmethod
+    def render_skeleton(skeleton: Skeleton3D) -> None:
         """
         Render the specified 3D skeleton using OpenGL.
 
@@ -74,23 +146,6 @@ class SkeletonRenderer:
             ('RAnkle', 'RHeel'): np.array([0., 153., 153.])
         }  # type: Dict[Tuple[str, str], np.ndarray]
 
-        # Enable lighting.
-        glEnable(GL_LIGHTING)
-
-        # Set up the first light to cast light in the +z direction.
-        glEnable(GL_LIGHT0)
-        pos = np.array([0.0, 0.0, -1.0, 0.0])  # type: np.ndarray
-        glLightfv(GL_LIGHT0, GL_POSITION, pos)
-
-        # Set up the second light to cast light in the -z direction.
-        glEnable(GL_LIGHT1)
-        glLightfv(GL_LIGHT1, GL_DIFFUSE, np.array([1, 1, 1, 1]))
-        glLightfv(GL_LIGHT1, GL_SPECULAR, np.array([1, 1, 1, 1]))
-        glLightfv(GL_LIGHT1, GL_POSITION, -pos)
-
-        # Enable colour-based materials (i.e. let material properties be defined by glColor).
-        glEnable(GL_COLOR_MATERIAL)
-
         # Render the keypoints themselves, colouring them on a scale according to their score (0 = red, 1 = green).
         for keypoint_name, keypoint in skeleton.keypoints.items():
             glColor3f(1 - keypoint.score, keypoint.score, 0.0)
@@ -98,7 +153,7 @@ class SkeletonRenderer:
 
         # Render the bones between the keypoints.
         for keypoint1, keypoint2 in skeleton.bones:
-            bone_key = Skeleton.make_bone_key(keypoint1, keypoint2)  # type: Tuple[str, str]
+            bone_key = Skeleton3D.make_bone_key(keypoint1, keypoint2)  # type: Tuple[str, str]
             bone_colour = bone_colours.get(bone_key)                 # type: Optional[np.ndarray]
             if bone_colour is not None:
                 # Note: We divide by 153 because that's the maximum value of a component in the colours table,
@@ -109,7 +164,3 @@ class SkeletonRenderer:
                 glColor3f(0.0, 0.0, 0.0)
 
             OpenGLUtil.render_cylinder(keypoint1.position, keypoint2.position, 0.025, 0.025, slices=10)
-
-        # Disable colour-based materials and lighting again.
-        glDisable(GL_COLOR_MATERIAL)
-        glDisable(GL_LIGHTING)

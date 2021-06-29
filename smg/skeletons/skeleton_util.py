@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 from smg.utility import GeometryUtil
 
-from .skeleton import Skeleton
+from .skeleton3d import Skeleton3D
 
 
 class SkeletonUtil:
@@ -36,7 +36,7 @@ class SkeletonUtil:
 
     @staticmethod
     def depopulate_depth_image_using_3d_boxes(
-        skeletons: List[Skeleton], depth_image: np.ndarray, world_from_camera: np.ndarray,
+        skeletons: List[Skeleton3D], depth_image: np.ndarray, world_from_camera: np.ndarray,
         intrinsics: Tuple[float, float, float, float], *, debug: bool = False
     ) -> np.ndarray:
         """
@@ -62,7 +62,7 @@ class SkeletonUtil:
 
     @staticmethod
     def make_people_mask_from_3d_boxes(
-        skeletons: List[Skeleton], depth_image: np.ndarray, world_from_camera: np.ndarray,
+        skeletons: List[Skeleton3D], depth_image: np.ndarray, world_from_camera: np.ndarray,
         intrinsics: Tuple[float, float, float, float], *, border_size: float = 0.5
     ) -> np.ndarray:
         """
@@ -96,7 +96,7 @@ class SkeletonUtil:
         return people_mask
 
     @staticmethod
-    def make_person_mask_from_3d_box(skeleton: Skeleton, depth_image: np.ndarray, ws_points: np.ndarray, *,
+    def make_person_mask_from_3d_box(skeleton: Skeleton3D, depth_image: np.ndarray, ws_points: np.ndarray, *,
                                      border_size: float = 0.5) -> np.ndarray:
         """
         Make a binary mask for the person corresponding to a 3D skeleton detected in a frame by determining
