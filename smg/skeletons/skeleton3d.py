@@ -259,21 +259,9 @@ class Skeleton3D:
 
     def __compute_global_keypoint_poses(self) -> None:
         """Compute the global poses for relevant keypoints (as keypoint space to world space transformations)."""
-        # For each keypoint with an orienter:
+        # TODO: Tidy this up.
         for keypoint_name, orienter in self.keypoint_orienters.items():
-            v0, v1, v2 = orienter.triangle_vertices
-
-            # Compute the coordinate axes for the keypoint.
-            y = vg.normalize(orienter.other_keypoint.position - orienter.keypoint.position)  # type: np.ndarray
-            n = vg.normalize(np.cross(v1 - v0, v2 - v0))                                     # type: np.ndarray
-            x = vg.normalize(np.cross(y, n))                                                 # type: np.ndarray
-            z = vg.normalize(np.cross(x, y))                                                 # type: np.ndarray
-
-            # Thence construct the global pose for the keypoint.
-            w_t_c = np.eye(4)                                                                # type: np.ndarray
-            w_t_c[0:3, 0:3] = np.column_stack([x, y, z])
-            w_t_c[0:3, 3] = orienter.keypoint.position
-            self.__global_keypoint_poses[keypoint_name] = w_t_c
+            self.__global_keypoint_poses[keypoint_name] = orienter.global_pose
 
     def __compute_local_keypoint_rotations(self) -> None:
         """Compute the local rotations for relevant keypoints in the skeleton (needed for avatar driving)."""

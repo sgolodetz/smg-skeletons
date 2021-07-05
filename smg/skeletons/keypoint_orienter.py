@@ -1,4 +1,5 @@
 import numpy as np
+import vg
 
 from typing import Dict, Optional, Tuple
 
@@ -35,12 +36,12 @@ class KeypointOrienter:
                                         of the keypoint of interest to the orientation of the mid-hip keypoint
                                         when the skeleton is in its rest pose (a T shape, with arms outstretched).
         """
-        self.__midhip_from_rest = midhip_from_rest  # type: np.ndarray
+        self.__midhip_from_rest = midhip_from_rest                 # type: np.ndarray
         self.__rest_from_midhip = np.linalg.inv(midhip_from_rest)  # type: np.ndarray
-        self.__triangle = triangle  # type: Tuple[str, str, str]
+        self.__triangle = triangle                                 # type: Tuple[str, str, str]
 
         # Look up the various keypoints.
-        self.__keypoint = keypoints[keypoint_name]  # type: Keypoint
+        self.__keypoint = keypoints[keypoint_name]              # type: Keypoint
         self.__other_keypoint = keypoints[other_keypoint_name]  # type: Keypoint
 
         self.__parent_keypoint = keypoints[parent_keypoint_name] \
@@ -50,7 +51,19 @@ class KeypointOrienter:
             [keypoints[name] for name in self.__triangle]
         )  # type: Tuple[Keypoint, Keypoint, Keypoint]
 
+        # Compute the global pose of the keypoint.
+        self.__global_pose = self.__compute_global_pose()  # type: np.ndarray
+
     # PROPERTIES
+
+    @property
+    def global_pose(self) -> np.ndarray:
+        """
+        TODO
+
+        :return:    TODO
+        """
+        return self.__global_pose
 
     @property
     def keypoint(self) -> Keypoint:
@@ -111,3 +124,26 @@ class KeypointOrienter:
         """
         # noinspection PyTypeChecker
         return tuple([keypoint.position for keypoint in self.__triangle_keypoints])
+
+    # PRIVATE METHODS
+
+    def __compute_global_pose(self) -> np.ndarray:
+        """
+        TODO
+
+        :return:    TODO
+        """
+        v0, v1, v2 = self.triangle_vertices
+
+        # Compute the coordinate axes for the keypoint.
+        y = vg.normalize(self.other_keypoint.position - self.keypoint.position)  # type: np.ndarray
+        n = vg.normalize(np.cross(v1 - v0, v2 - v0))                             # type: np.ndarray
+        x = vg.normalize(np.cross(y, n))                                         # type: np.ndarray
+        z = vg.normalize(np.cross(x, y))                                         # type: np.ndarray
+
+        # Thence construct the global pose for the keypoint.
+        w_t_c = np.eye(4)  # type: np.ndarray
+        w_t_c[0:3, 0:3] = np.column_stack([x, y, z])
+        w_t_c[0:3, 3] = self.keypoint.position
+
+        return w_t_c
