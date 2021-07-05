@@ -239,6 +239,57 @@ class Skeleton3D:
     # PUBLIC STATIC METHODS
 
     @staticmethod
+    def compute_local_keypoint_rotations(*, global_keypoint_poses: Dict[str, np.ndarray],
+                                         midhip_from_rests: Dict[str, np.ndarray],
+                                         parents: Dict[str, str]) -> Dict[str, np.ndarray]:
+        """
+        Compute the local rotations for relevant keypoints in a skeleton.
+
+        .. note::
+            This is needed for avatar driving.
+
+        :param global_keypoint_poses:   TODO
+        :param midhip_from_rests:       TODO
+        :param parents:                 TODO
+        :return:                        TODO
+        """
+        local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
+
+        # For each keypoint for which a global pose is available:
+        for current_name, world_from_current in global_keypoint_poses.items():
+            world_from_parent = None         # type: Optional[np.ndarray]
+            midhip_from_rest_current = None  # type: Optional[np.ndarray]
+            midhip_from_rest_parent = None   # type: Optional[np.ndarray]
+
+            # If it has a parent in the skeleton:
+            parent_name = parents.get(current_name)  # type: Optional[str]
+            if parent_name is not None:
+                # Try to get the relevant transformations for both the keypoint and its parent.
+                world_from_parent = global_keypoint_poses.get(parent_name)
+                midhip_from_rest_current = midhip_from_rests.get(current_name)
+                midhip_from_rest_parent = midhip_from_rests.get(parent_name)
+
+            # If they're all available, use them to compute the local rotation for the keypoint.
+            if all([x is not None for x in [world_from_parent, midhip_from_rest_current, midhip_from_rest_parent]]):
+                # Derivation:
+                #
+                # m0Tp0 * wTp^-1 * wTc * m0Tc0^-1
+                # = m0Tp0 * pTw * wTc * c0Tm0
+                # = m0Tp0 * (pTp0 * p0Tm0 * m0Tw) * (wTm0 * m0Tc0 * c0Tc) * c0Tm0
+                # = (m0Tp0 * pTp0 * p0Tm0) * (m0Tc0 * c0Tc * c0Tm0)
+                local_keypoint_rotations[current_name] = \
+                    midhip_from_rest_parent @ \
+                    np.linalg.inv(world_from_parent[0:3, 0:3]) @ \
+                    world_from_current[0:3, 0:3] @ \
+                    np.linalg.inv(midhip_from_rest_current)
+
+            # Otherwise, set the local rotation for the keypoint to the identity matrix (as a default).
+            else:
+                local_keypoint_rotations[current_name] = np.eye(3)
+
+        return local_keypoint_rotations
+
+    @staticmethod
     def make_bone_key(keypoint1: Keypoint, keypoint2: Keypoint) -> Tuple[str, str]:
         """
         Make a key that can be used to look up a bone in a dictionary.
@@ -334,38 +385,17 @@ class Skeleton3D:
             self.__global_keypoint_poses[keypoint_name] = w_t_c
 
     def __compute_local_keypoint_rotations(self) -> None:
-        """Compute the local rotations for relevant keypoints (needed for avatar driving)."""
-        # For each keypoint with an orienter:
+        """Compute the local rotations for relevant keypoints in the skeleton (needed for avatar driving)."""
+        midhip_from_rests = {}  # type: Dict[str, np.ndarray]
+        parents = {}            # type: Dict[str, str]
         for keypoint_name, orienter in self.keypoint_orienters.items():
-            parent_orienter = None     # type: Optional[Skeleton3D.KeypointOrienter]
-            world_from_parent = None   # type: Optional[np.ndarray]
-            world_from_current = None  # type: Optional[np.ndarray]
-
-            # If it has a parent in the skeleton:
+            midhip_from_rests[keypoint_name] = orienter.midhip_from_rest
             if orienter.parent_keypoint is not None:
-                # Try to get the parent's orienter, as well as the global poses of the keypoint and its parent.
-                parent_keypoint_name = orienter.parent_keypoint.name  # type: str
-                parent_orienter = self.keypoint_orienters.get(parent_keypoint_name)
-                world_from_current = self.__global_keypoint_poses.get(keypoint_name)
-                world_from_parent = self.__global_keypoint_poses.get(parent_keypoint_name)
+                parents[keypoint_name] = orienter.parent_keypoint.name
 
-            # If all of those are available, use them to compute the local rotation for the keypoint.
-            if parent_orienter is not None and world_from_parent is not None and world_from_current is not None:
-                # Derivation:
-                #
-                # m0Tp0 * wTp^-1 * wTc * m0Tc0^-1
-                # = m0Tp0 * pTw * wTc * c0Tm0
-                # = m0Tp0 * (pTp0 * p0Tm0 * m0Tw) * (wTm0 * m0Tc0 * c0Tc) * c0Tm0
-                # = (m0Tp0 * pTp0 * p0Tm0) * (m0Tc0 * c0Tc * c0Tm0)
-                self.__local_keypoint_rotations[keypoint_name] = \
-                    parent_orienter.midhip_from_rest @ \
-                    np.linalg.inv(world_from_parent[0:3, 0:3]) @ \
-                    world_from_current[0:3, 0:3] @ \
-                    orienter.rest_from_midhip
-
-            # Otherwise, set the local rotation for the keypoint to the identity matrix (as a default).
-            else:
-                self.__local_keypoint_rotations[keypoint_name] = np.eye(3)
+        self.__local_keypoint_rotations = Skeleton3D.compute_local_keypoint_rotations(
+            global_keypoint_poses=self.__global_keypoint_poses, midhip_from_rests=midhip_from_rests, parents=parents
+        )
 
     def __try_add_keypoint_orienter(self, keypoint_name: str, other_keypoint_name: str,
                                     parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str],
