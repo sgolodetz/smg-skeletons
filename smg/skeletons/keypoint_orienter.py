@@ -54,6 +54,43 @@ class KeypointOrienter:
         # Compute the global pose of the keypoint.
         self.__global_pose = self.__compute_global_pose()  # type: np.ndarray
 
+    # PUBLIC STATIC METHODS
+
+    @staticmethod
+    def try_make(keypoints: Dict[str, Keypoint], keypoint_name: str, other_keypoint_name: str,
+                 parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str],
+                 midhip_from_rest: np.ndarray) -> Optional["KeypointOrienter"]:
+        """
+        Try to make an orienter for the specified keypoint in a skeleton.
+
+        .. note::
+            If the skeleton does not have one or more of the keypoints that the orienter needs,
+            no orienter will be constructed.
+
+        :param keypoints:               TODO
+        :param keypoint_name:           The name of the keypoint of interest.
+        :param other_keypoint_name:     The name of the other keypoint defining the direction of the y axis.
+        :param parent_keypoint_name:    The name of the parent keypoint in the skeleton (if any) of the keypoint
+                                        of interest.
+        :param triangle:                A triple of keypoint names specifying a triangle that is used to determine
+                                        the direction of the z axis.
+        :param midhip_from_rest:        A 3*3 rotation matrix specifying the transformation from the orientation
+                                        of the keypoint of interest to the orientation of the mid-hip keypoint
+                                        when the skeleton is in its rest pose (a T shape, with arms outstretched).
+        """
+        # If any of the keypoints needed by the orienter are missing, early out.
+        for name in [keypoint_name, other_keypoint_name, *triangle]:
+            if keypoints.get(name) is None:
+                return None
+
+        if parent_keypoint_name is not None and keypoints.get(parent_keypoint_name) is None:
+            return None
+
+        # Otherwise, construct and return the orienter.
+        return KeypointOrienter(
+            keypoints, keypoint_name, other_keypoint_name, parent_keypoint_name, triangle, midhip_from_rest
+        )
+
     # PROPERTIES
 
     @property

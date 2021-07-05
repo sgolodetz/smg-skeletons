@@ -7,6 +7,7 @@ from smg.utility import Cylinder, Shape, Sphere
 
 from .keypoint import Keypoint
 from .keypoint_orienter import KeypointOrienter
+from .keypoint_util import KeypointUtil
 
 
 class Skeleton3D:
@@ -130,57 +131,6 @@ class Skeleton3D:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def compute_local_keypoint_rotations(*, global_keypoint_poses: Dict[str, np.ndarray],
-                                         keypoint_parents: Dict[str, str],
-                                         midhip_from_rests: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        """
-        Compute the local rotations for relevant keypoints in a skeleton.
-
-        .. note::
-            This is needed for avatar driving.
-
-        :param global_keypoint_poses:   TODO
-        :param keypoint_parents:        TODO
-        :param midhip_from_rests:       TODO
-        :return:                        TODO
-        """
-        local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
-
-        # For each keypoint for which a global pose is available:
-        for current_name, world_from_current in global_keypoint_poses.items():
-            world_from_parent = None         # type: Optional[np.ndarray]
-            midhip_from_rest_current = None  # type: Optional[np.ndarray]
-            midhip_from_rest_parent = None   # type: Optional[np.ndarray]
-
-            # If it has a parent in the skeleton:
-            parent_name = keypoint_parents.get(current_name)  # type: Optional[str]
-            if parent_name is not None:
-                # Try to get the relevant transformations for both the keypoint and its parent.
-                world_from_parent = global_keypoint_poses.get(parent_name)
-                midhip_from_rest_current = midhip_from_rests.get(current_name)
-                midhip_from_rest_parent = midhip_from_rests.get(parent_name)
-
-            # If they're all available, use them to compute the local rotation for the keypoint.
-            if all([x is not None for x in [world_from_parent, midhip_from_rest_current, midhip_from_rest_parent]]):
-                # Derivation:
-                #
-                # m0Tp0 * wTp^-1 * wTc * m0Tc0^-1
-                # = m0Tp0 * pTw * wTc * c0Tm0
-                # = m0Tp0 * (pTp0 * p0Tm0 * m0Tw) * (wTm0 * m0Tc0 * c0Tc) * c0Tm0
-                # = (m0Tp0 * pTp0 * p0Tm0) * (m0Tc0 * c0Tc * c0Tm0)
-                local_keypoint_rotations[current_name] = \
-                    midhip_from_rest_parent @ \
-                    np.linalg.inv(world_from_parent[0:3, 0:3]) @ \
-                    world_from_current[0:3, 0:3] @ \
-                    np.linalg.inv(midhip_from_rest_current)
-
-            # Otherwise, set the local rotation for the keypoint to the identity matrix (as a default).
-            else:
-                local_keypoint_rotations[current_name] = np.eye(3)
-
-        return local_keypoint_rotations
-
-    @staticmethod
     def make_bone_key(keypoint1: Keypoint, keypoint2: Keypoint) -> Tuple[str, str]:
         """
         Make a key that can be used to look up a bone in a dictionary.
@@ -272,7 +222,7 @@ class Skeleton3D:
             if orienter.parent_keypoint is not None:
                 keypoint_parents[keypoint_name] = orienter.parent_keypoint.name
 
-        self.__local_keypoint_rotations = Skeleton3D.compute_local_keypoint_rotations(
+        self.__local_keypoint_rotations = KeypointUtil.compute_local_keypoint_rotations(
             global_keypoint_poses=self.__global_keypoint_poses,
             keypoint_parents=keypoint_parents,
             midhip_from_rests=midhip_from_rests
@@ -298,18 +248,14 @@ class Skeleton3D:
                                         of the keypoint of interest to the orientation of the mid-hip keypoint
                                         when the skeleton is in its rest pose (a T shape, with arms outstretched).
         """
-        # If any of the keypoints needed by the orienter are missing, early out.
-        for name in [keypoint_name, other_keypoint_name, *triangle]:
-            if self.__keypoints.get(name) is None:
-                return
-
-        if parent_keypoint_name is not None and self.__keypoints.get(parent_keypoint_name) is None:
-            return
-
-        # Otherwise, construct the orienter and add it to the skeleton.
-        self.__keypoint_orienters[keypoint_name] = KeypointOrienter(
+        # Try to construct the orienter (note that this may fail if any of the keypoints it needs are missing).
+        orienter = KeypointOrienter.try_make(
             self.__keypoints, keypoint_name, other_keypoint_name, parent_keypoint_name, triangle, midhip_from_rest
-        )
+        )  # type: Optional[KeypointOrienter]
+
+        # If the orienter has been successfully constructed, add it to the skeleton.
+        if orienter is not None:
+            self.__keypoint_orienters[keypoint_name] = orienter
 
     def __try_add_keypoint_orienters(self) -> None:
         """Try to add orienters for relevant keypoints to the skeleton."""
