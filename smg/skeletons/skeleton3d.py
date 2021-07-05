@@ -240,8 +240,8 @@ class Skeleton3D:
 
     @staticmethod
     def compute_local_keypoint_rotations(*, global_keypoint_poses: Dict[str, np.ndarray],
-                                         midhip_from_rests: Dict[str, np.ndarray],
-                                         parents: Dict[str, str]) -> Dict[str, np.ndarray]:
+                                         keypoint_parents: Dict[str, str],
+                                         midhip_from_rests: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Compute the local rotations for relevant keypoints in a skeleton.
 
@@ -249,8 +249,8 @@ class Skeleton3D:
             This is needed for avatar driving.
 
         :param global_keypoint_poses:   TODO
+        :param keypoint_parents:        TODO
         :param midhip_from_rests:       TODO
-        :param parents:                 TODO
         :return:                        TODO
         """
         local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
@@ -262,7 +262,7 @@ class Skeleton3D:
             midhip_from_rest_parent = None   # type: Optional[np.ndarray]
 
             # If it has a parent in the skeleton:
-            parent_name = parents.get(current_name)  # type: Optional[str]
+            parent_name = keypoint_parents.get(current_name)  # type: Optional[str]
             if parent_name is not None:
                 # Try to get the relevant transformations for both the keypoint and its parent.
                 world_from_parent = global_keypoint_poses.get(parent_name)
@@ -386,15 +386,17 @@ class Skeleton3D:
 
     def __compute_local_keypoint_rotations(self) -> None:
         """Compute the local rotations for relevant keypoints in the skeleton (needed for avatar driving)."""
+        keypoint_parents = {}  # type: Dict[str, str]
         midhip_from_rests = {}  # type: Dict[str, np.ndarray]
-        parents = {}            # type: Dict[str, str]
         for keypoint_name, orienter in self.keypoint_orienters.items():
             midhip_from_rests[keypoint_name] = orienter.midhip_from_rest
             if orienter.parent_keypoint is not None:
-                parents[keypoint_name] = orienter.parent_keypoint.name
+                keypoint_parents[keypoint_name] = orienter.parent_keypoint.name
 
         self.__local_keypoint_rotations = Skeleton3D.compute_local_keypoint_rotations(
-            global_keypoint_poses=self.__global_keypoint_poses, midhip_from_rests=midhip_from_rests, parents=parents
+            global_keypoint_poses=self.__global_keypoint_poses,
+            keypoint_parents=keypoint_parents,
+            midhip_from_rests=midhip_from_rests
         )
 
     def __try_add_keypoint_orienter(self, keypoint_name: str, other_keypoint_name: str,

@@ -83,19 +83,8 @@ class SkeletonRenderer:
             glEnd()
             glPopAttrib()
 
-            # Render the current pose of the associated keypoint.
-            world_from_current = skeleton.global_keypoint_poses[keypoint_name]  # type: np.ndarray
-
-            glPushAttrib(GL_LINE_BIT)
-            glLineWidth(2)
-
-            CameraRenderer.render_camera(
-                CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_current)), axis_scale=0.1
-            )
-
-            glPopAttrib()
-
             # Render the rest orientation of the associated keypoint at its current position, to enable comparison.
+            # TODO: Fix this comment.
             world_from_rest = skeleton.global_keypoint_poses[keypoint_name].copy()  # type: np.ndarray
             world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ orienter.midhip_from_rest
 
@@ -106,6 +95,20 @@ class SkeletonRenderer:
 
             CameraRenderer.render_camera(
                 CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_rest)), axis_scale=0.1
+            )
+
+            glPopAttrib()
+
+        # TODO: Make this a separate function.
+        for keypoint_name in skeleton.global_keypoint_poses:
+            # Render the current pose of the associated keypoint.
+            world_from_current = skeleton.global_keypoint_poses[keypoint_name]  # type: np.ndarray
+
+            glPushAttrib(GL_LINE_BIT)
+            glLineWidth(2)
+
+            CameraRenderer.render_camera(
+                CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_current)), axis_scale=0.1
             )
 
             glPopAttrib()
