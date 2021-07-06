@@ -32,27 +32,27 @@ class KeypointOrienter:
                                         of interest.
         :param triangle:                A triple of keypoint names specifying a triangle that is used to determine
                                         the direction of the z axis.
-        :param midhip_from_rest:        A 3*3 rotation matrix specifying the transformation from the orientation
-                                        of the keypoint of interest to the orientation of the mid-hip keypoint
-                                        when the skeleton is in its rest pose (a T shape, with arms outstretched).
+        :param midhip_from_rest:        A 3*3 rotation matrix specifying the transformation from the orientation of
+                                        the keypoint of interest to the orientation of the mid-hip keypoint when the
+                                        skeleton is in its rest pose (commonly a T shape, with arms outstretched).
         """
         self.__midhip_from_rest = midhip_from_rest                 # type: np.ndarray
         self.__rest_from_midhip = np.linalg.inv(midhip_from_rest)  # type: np.ndarray
         self.__triangle = triangle                                 # type: Tuple[str, str, str]
 
         # Look up the various keypoints.
-        self.__keypoint = keypoints[keypoint_name]              # type: Keypoint
-        self.__other_keypoint = keypoints[other_keypoint_name]  # type: Keypoint
+        self.__keypoint = keypoints[keypoint_name]                 # type: Keypoint
+        self.__other_keypoint = keypoints[other_keypoint_name]     # type: Keypoint
 
         self.__parent_keypoint = keypoints[parent_keypoint_name] \
-            if parent_keypoint_name is not None else None  # type: Optional[Keypoint]
+            if parent_keypoint_name is not None else None          # type: Optional[Keypoint]
 
         self.__triangle_keypoints = tuple(
             [keypoints[name] for name in self.__triangle]
         )  # type: Tuple[Keypoint, Keypoint, Keypoint]
 
-        # Compute the global pose of the keypoint.
-        self.__global_pose = self.__compute_global_pose()  # type: np.ndarray
+        # Compute a global 6D pose for the keypoint.
+        self.__global_pose = self.__compute_global_pose()          # type: np.ndarray
 
     # PUBLIC STATIC METHODS
 
@@ -67,16 +67,16 @@ class KeypointOrienter:
             If the skeleton does not have one or more of the keypoints that the orienter needs,
             no orienter will be constructed.
 
-        :param keypoints:               TODO
+        :param keypoints:               A set of keypoints for a skeleton.
         :param keypoint_name:           The name of the keypoint of interest.
         :param other_keypoint_name:     The name of the other keypoint defining the direction of the y axis.
         :param parent_keypoint_name:    The name of the parent keypoint in the skeleton (if any) of the keypoint
                                         of interest.
         :param triangle:                A triple of keypoint names specifying a triangle that is used to determine
                                         the direction of the z axis.
-        :param midhip_from_rest:        A 3*3 rotation matrix specifying the transformation from the orientation
-                                        of the keypoint of interest to the orientation of the mid-hip keypoint
-                                        when the skeleton is in its rest pose (a T shape, with arms outstretched).
+        :param midhip_from_rest:        A 3*3 rotation matrix specifying the transformation from the orientation of
+                                        the keypoint of interest to the orientation of the mid-hip keypoint when the
+                                        skeleton is in its rest pose (commonly a T shape, with arms outstretched).
         """
         # If any of the keypoints needed by the orienter are missing, early out.
         for name in [keypoint_name, other_keypoint_name, *triangle]:
@@ -96,9 +96,9 @@ class KeypointOrienter:
     @property
     def global_pose(self) -> np.ndarray:
         """
-        TODO
+        The global 6D pose of the keypoint.
 
-        :return:    TODO
+        :return:    The global 6D pose of the keypoint.
         """
         return self.__global_pose
 
@@ -166,9 +166,9 @@ class KeypointOrienter:
 
     def __compute_global_pose(self) -> np.ndarray:
         """
-        TODO
+        Compute a global 6D pose for the keypoint.
 
-        :return:    TODO
+        :return:    A global 6D pose for the keypoint.
         """
         v0, v1, v2 = self.triangle_vertices
 
@@ -179,7 +179,7 @@ class KeypointOrienter:
         z = vg.normalize(np.cross(x, y))                                         # type: np.ndarray
 
         # Thence construct the global pose for the keypoint.
-        w_t_c = np.eye(4)  # type: np.ndarray
+        w_t_c = np.eye(4)                                                        # type: np.ndarray
         w_t_c[0:3, 0:3] = np.column_stack([x, y, z])
         w_t_c[0:3, 3] = self.keypoint.position
 
