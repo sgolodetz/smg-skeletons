@@ -215,17 +215,17 @@ class Skeleton3D:
 
     def __compute_local_keypoint_rotations(self) -> None:
         """Compute the local rotations for relevant keypoints in the skeleton (needed for avatar driving)."""
-        keypoint_parents = {}  # type: Dict[str, str]
         midhip_from_rests = {}  # type: Dict[str, np.ndarray]
+        parent_keypoints = {}  # type: Dict[str, str]
         for keypoint_name, orienter in self.keypoint_orienters.items():
             midhip_from_rests[keypoint_name] = orienter.midhip_from_rest
             if orienter.parent_keypoint is not None:
-                keypoint_parents[keypoint_name] = orienter.parent_keypoint.name
+                parent_keypoints[keypoint_name] = orienter.parent_keypoint.name
 
         self.__local_keypoint_rotations = KeypointUtil.compute_local_keypoint_rotations(
             global_keypoint_poses=self.__global_keypoint_poses,
-            keypoint_parents=keypoint_parents,
-            midhip_from_rests=midhip_from_rests
+            midhip_from_rests=midhip_from_rests,
+            parent_keypoints=parent_keypoints
         )
 
     def __try_add_keypoint_orienter(self, keypoint_name: str, other_keypoint_name: str,

@@ -4,24 +4,35 @@ from typing import Dict, Optional
 
 
 class KeypointUtil:
-    """TODO"""
+    """Utility functions related to the keypoints in a skeleton."""
 
     # PUBLIC STATIC METHODS
 
     @staticmethod
     def compute_local_keypoint_rotations(*, global_keypoint_poses: Dict[str, np.ndarray],
-                                         keypoint_parents: Dict[str, str],
-                                         midhip_from_rests: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+                                         midhip_from_rests: Dict[str, np.ndarray],
+                                         parent_keypoints: Dict[str, str]) -> Dict[str, np.ndarray]:
         """
-        Compute the local rotations for relevant keypoints in a skeleton.
+        Compute the local rotations for those keypoints in a skeleton that have known global 6D poses.
 
         .. note::
             This is needed for avatar driving.
+        .. note::
+            We will attempt to compute a local rotation for any keypoint that has a known global 6D pose.
+            A successful computation requires the keypoint to also have:
 
-        :param global_keypoint_poses:   TODO
-        :param keypoint_parents:        TODO
-        :param midhip_from_rests:       TODO
-        :return:                        TODO
+             (i) A known midhip-from-rest transform.
+            (ii) A parent for which we also know the global 6D pose and midhip-from-rest transform.
+
+            Any keypoint that has a global 6D pose but that cannot satisfy these additional conditions
+            will be assigned the identity matrix as its local rotation.
+
+        :param global_keypoint_poses:   The global 6D poses of the skeleton's keypoints.
+        :param midhip_from_rests:       A 3*3 rotation matrix for each relevant keypoint specifying the transformation
+                                        from the orientation of the keypoint to the orientation of the mid-hip keypoint
+                                        when the skeleton is in its rest pose.
+        :param parent_keypoints:        A map specifying the child to parent relationships between the keypoints.
+        :return:                        The local rotations for the relevant keypoints.
         """
         local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
 
@@ -32,7 +43,7 @@ class KeypointUtil:
             midhip_from_rest_parent = None   # type: Optional[np.ndarray]
 
             # If it has a parent in the skeleton:
-            parent_name = keypoint_parents.get(current_name)  # type: Optional[str]
+            parent_name = parent_keypoints.get(current_name)  # type: Optional[str]
             if parent_name is not None:
                 # Try to get the relevant transformations for both the keypoint and its parent.
                 world_from_parent = global_keypoint_poses.get(parent_name)
