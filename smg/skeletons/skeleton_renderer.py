@@ -55,7 +55,7 @@ class SkeletonRenderer:
     @staticmethod
     def render_keypoint_orienters(skeleton: Skeleton3D) -> None:
         """
-        Render the keypoint orienters for the specified skeleton (for debugging purposes).
+        Render the orienters of the specified skeleton's keypoints (for debugging purposes).
 
         :param skeleton:    The skeleton.
         """
@@ -83,21 +83,9 @@ class SkeletonRenderer:
             glEnd()
             glPopAttrib()
 
-            # Render the current pose of the associated keypoint.
-            world_from_current = skeleton.global_keypoint_poses[keypoint_name]  # type: np.ndarray
-
-            glPushAttrib(GL_LINE_BIT)
-            glLineWidth(2)
-
-            CameraRenderer.render_camera(
-                CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_current)), axis_scale=0.1
-            )
-
-            glPopAttrib()
-
-            # Render the rest orientation of the associated keypoint at its current position, to enable comparison.
+            # Render the rest orientation of the associated keypoint at its current position.
             world_from_rest = skeleton.global_keypoint_poses[keypoint_name].copy()  # type: np.ndarray
-            world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ orienter.midhip_from_rest
+            world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ skeleton.midhip_from_rests[keypoint_name]
 
             glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT)
             glLineStipple(1, 0xCCCC)
@@ -106,6 +94,25 @@ class SkeletonRenderer:
 
             CameraRenderer.render_camera(
                 CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_rest)), axis_scale=0.1
+            )
+
+            glPopAttrib()
+
+    @staticmethod
+    def render_keypoint_poses(skeleton: Skeleton3D) -> None:
+        """
+        Render the current global poses of the specified skeleton's keypoints (for debugging purposes).
+
+        :param skeleton:    The skeleton.
+        """
+        for keypoint_name in skeleton.global_keypoint_poses:
+            world_from_current = skeleton.global_keypoint_poses[keypoint_name]  # type: np.ndarray
+
+            glPushAttrib(GL_LINE_BIT)
+            glLineWidth(2)
+
+            CameraRenderer.render_camera(
+                CameraPoseConverter.pose_to_camera(np.linalg.inv(world_from_current)), axis_scale=0.1
             )
 
             glPopAttrib()

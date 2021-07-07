@@ -6,120 +6,12 @@ from typing import Dict, List, Optional, Tuple
 from smg.utility import Cylinder, Shape, Sphere
 
 from .keypoint import Keypoint
+from .keypoint_orienter import KeypointOrienter
+from .keypoint_util import KeypointUtil
 
 
 class Skeleton3D:
     """A 3D skeleton."""
-
-    # NESTED TYPES
-
-    class KeypointOrienter:
-        """
-        A keypoint orienter.
-
-        As its name suggests, a keypoint orienter is used to specify the orientation of a keypoint (i.e. find a set
-        of xyz coordinate axes for the keypoint). The y axis is defined so as to point from the keypoint of interest
-        to a separate keypoint. The z axis is defined to be perpendicular to the y axis and as much as possible in
-        the direction of the normal of a triangle whose vertices are three of the keypoints. In practice, if the
-        unit normal of the triangle is n, we compute x = cross(y, n) and z = cross(x, y). This means that n can't
-        point in the same direction as y: we ensure this by construction.
-        """
-
-        # CONSTRUCTOR
-
-        def __init__(self, skeleton: "Skeleton3D", keypoint_name: str, other_keypoint_name: str,
-                     parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str], midhip_from_rest: np.ndarray):
-            """
-            Construct a keypoint orienter.
-
-            :param skeleton:                The skeleton containing the keypoint of interest.
-            :param keypoint_name:           The name of the keypoint of interest.
-            :param other_keypoint_name:     The name of the other keypoint defining the direction of the y axis.
-            :param parent_keypoint_name:    The name of the parent keypoint in the skeleton (if any) of the keypoint
-                                            of interest.
-            :param triangle:                A triple of keypoint names specifying a triangle that is used to determine
-                                            the direction of the z axis.
-            :param midhip_from_rest:        A 3*3 rotation matrix specifying the transformation from the orientation
-                                            of the keypoint of interest to the orientation of the mid-hip keypoint
-                                            when the skeleton is in its rest pose (a T shape, with arms outstretched).
-            """
-            self.__midhip_from_rest = midhip_from_rest                 # type: np.ndarray
-            self.__rest_from_midhip = np.linalg.inv(midhip_from_rest)  # type: np.ndarray
-            self.__skeleton = skeleton                                 # type: Skeleton3D
-            self.__triangle = triangle                                 # type: Tuple[str, str, str]
-
-            # Look up the various keypoints.
-            self.__keypoint = self.__skeleton.keypoints[keypoint_name]              # type: Keypoint
-            self.__other_keypoint = self.__skeleton.keypoints[other_keypoint_name]  # type: Keypoint
-
-            self.__parent_keypoint = self.__skeleton.keypoints[parent_keypoint_name] \
-                if parent_keypoint_name is not None else None  # type: Optional[Keypoint]
-
-            self.__triangle_keypoints = tuple(
-                [self.__skeleton.keypoints[name] for name in self.__triangle]
-            )  # type: Tuple[Keypoint, Keypoint, Keypoint]
-
-        # PROPERTIES
-
-        @property
-        def keypoint(self) -> Keypoint:
-            """
-            Get the keypoint of interest.
-
-            :return:    The keypoint of interest.
-            """
-            return self.__keypoint
-
-        @property
-        def midhip_from_rest(self) -> np.ndarray:
-            """
-            Get a 3*3 rotation matrix specifying the transformation from the orientation of the keypoint of interest
-            to the orientation of the mid-hip keypoint when the skeleton is in its rest pose.
-
-            :return:    The 3*3 rotation matrix as specified.
-            """
-            return self.__midhip_from_rest
-
-        @property
-        def other_keypoint(self) -> Keypoint:
-            """
-            Get the other keypoint defining the direction of the y axis.
-
-            :return:    The other keypoint defining the direction of the y axis.
-            """
-            return self.__other_keypoint
-
-        @property
-        def parent_keypoint(self) -> Optional[Keypoint]:
-            """
-            Get the parent keypoint in the skeleton (if any) of the keypoint of interest.
-
-            :return:    The parent keypoint in the skeleton (if any) of the keypoint of interest.
-            """
-            return self.__parent_keypoint
-
-        @property
-        def rest_from_midhip(self) -> np.ndarray:
-            """
-            Get a 3*3 rotation matrix specifying the transformation from the orientation of the mid-hip keypoint
-            to the orientation of the keypoint of interest when the skeleton is in its rest pose.
-
-            :return:    The 3*3 rotation matrix as specified.
-            """
-            return self.__rest_from_midhip
-
-        @property
-        def triangle_vertices(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-            """
-            Get the vertices of the triangle that is used to determine the direction of the z axis.
-
-            .. note::
-                The winding order of the triangle is counter-clockwise.
-
-            :return:    The vertices of the triangle that is used to determine the direction of the z axis.
-            """
-            # noinspection PyTypeChecker
-            return tuple([keypoint.position for keypoint in self.__triangle_keypoints])
 
     # CONSTRUCTOR
 
@@ -151,19 +43,50 @@ class Skeleton3D:
 
         # If both global keypoint poses and local keypoint rotations have been provided from outside, use them.
         if global_keypoint_poses and local_keypoint_rotations:
-            self.__keypoint_orienters = {}                              # type: Dict[str, Skeleton3D.KeypointOrienter]
+            self.__keypoint_orienters = {}                              # type: Dict[str, KeypointOrienter]
             self.__global_keypoint_poses = global_keypoint_poses        # type: Dict[str, np.ndarray]
+            self.__midhip_from_rests = {}                               # type: Dict[str, np.ndarray]
             self.__local_keypoint_rotations = local_keypoint_rotations  # type: Dict[str, np.ndarray]
 
         # Otherwise, try to compute global poses and local rotations for relevant keypoints in the skeleton.
         else:
-            self.__keypoint_orienters = {}        # type: Dict[str, Skeleton3D.KeypointOrienter]
-            self.__global_keypoint_poses = {}     # type: Dict[str, np.ndarray]
-            self.__local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
-
+            self.__keypoint_orienters = {}  # type: Dict[str, KeypointOrienter]
             self.__try_add_keypoint_orienters()
-            self.__compute_global_keypoint_poses()
-            self.__compute_local_keypoint_rotations()
+
+            self.__global_keypoint_poses = {}  # type: Dict[str, np.ndarray]
+            for keypoint_name, orienter in self.keypoint_orienters.items():
+                self.__global_keypoint_poses[keypoint_name] = orienter.global_pose
+
+            self.__midhip_from_rests = {
+                "LElbow": np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]),
+                "LHip": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]),
+                "LKnee": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]),
+                "LShoulder": np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]),
+                "MidHip": np.eye(3),
+                "Neck": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]),
+                "RElbow": np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]]),
+                "RHip": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]),
+                "RKnee": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]),
+                "RShoulder": np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+            }  # type: Dict[str, np.ndarray]
+
+            parent_keypoints = {
+                'LElbow': 'LShoulder',
+                'LHip': 'MidHip',
+                'LKnee': 'LHip',
+                'LShoulder': 'Neck',
+                'Neck': 'MidHip',
+                'RElbow': 'RShoulder',
+                'RHip': 'MidHip',
+                'RKnee': 'RHip',
+                'RShoulder': 'Neck'
+            }  # type: Dict[str, str]
+
+            self.__local_keypoint_rotations = KeypointUtil.compute_local_keypoint_rotations(
+                global_keypoint_poses=self.__global_keypoint_poses,
+                midhip_from_rests=self.__midhip_from_rests,
+                parent_keypoints=parent_keypoints
+            )
 
     # SPECIAL METHODS
 
@@ -235,6 +158,18 @@ class Skeleton3D:
         :return:    The local rotations for any keypoints for which they have been calculated.
         """
         return self.__local_keypoint_rotations
+
+    @property
+    def midhip_from_rests(self) -> Dict[str, np.ndarray]:
+        """
+        Get a 3*3 rotation matrix for each relevant keypoint specifying the transformation from the orientation
+        of the keypoint to the orientation of the mid-hip keypoint when the skeleton is in its rest pose.
+
+        :return:    A 3*3 rotation matrix for each relevant keypoint specifying the transformation from the
+                    orientation of the keypoint to the orientation of the mid-hip keypoint when the skeleton
+                    is in its rest pose.
+        """
+        return self.__midhip_from_rests
 
     # PUBLIC STATIC METHODS
 
@@ -315,61 +250,8 @@ class Skeleton3D:
                 top_radius=top_radius
             ))
 
-    def __compute_global_keypoint_poses(self) -> None:
-        """Compute the global poses for relevant keypoints (as keypoint space to world space transformations)."""
-        # For each keypoint with an orienter:
-        for keypoint_name, orienter in self.keypoint_orienters.items():
-            v0, v1, v2 = orienter.triangle_vertices
-
-            # Compute the coordinate axes for the keypoint.
-            y = vg.normalize(orienter.other_keypoint.position - orienter.keypoint.position)  # type: np.ndarray
-            n = vg.normalize(np.cross(v1 - v0, v2 - v0))                                     # type: np.ndarray
-            x = vg.normalize(np.cross(y, n))                                                 # type: np.ndarray
-            z = vg.normalize(np.cross(x, y))                                                 # type: np.ndarray
-
-            # Thence construct the global pose for the keypoint.
-            w_t_c = np.eye(4)                                                                # type: np.ndarray
-            w_t_c[0:3, 0:3] = np.column_stack([x, y, z])
-            w_t_c[0:3, 3] = orienter.keypoint.position
-            self.__global_keypoint_poses[keypoint_name] = w_t_c
-
-    def __compute_local_keypoint_rotations(self) -> None:
-        """Compute the local rotations for relevant keypoints (needed for avatar driving)."""
-        # For each keypoint with an orienter:
-        for keypoint_name, orienter in self.keypoint_orienters.items():
-            parent_orienter = None     # type: Optional[Skeleton3D.KeypointOrienter]
-            world_from_parent = None   # type: Optional[np.ndarray]
-            world_from_current = None  # type: Optional[np.ndarray]
-
-            # If it has a parent in the skeleton:
-            if orienter.parent_keypoint is not None:
-                # Try to get the parent's orienter, as well as the global poses of the keypoint and its parent.
-                parent_keypoint_name = orienter.parent_keypoint.name  # type: str
-                parent_orienter = self.keypoint_orienters.get(parent_keypoint_name)
-                world_from_current = self.__global_keypoint_poses.get(keypoint_name)
-                world_from_parent = self.__global_keypoint_poses.get(parent_keypoint_name)
-
-            # If all of those are available, use them to compute the local rotation for the keypoint.
-            if parent_orienter is not None and world_from_parent is not None and world_from_current is not None:
-                # Derivation:
-                #
-                # m0Tp0 * wTp^-1 * wTc * m0Tc0^-1
-                # = m0Tp0 * pTw * wTc * c0Tm0
-                # = m0Tp0 * (pTp0 * p0Tm0 * m0Tw) * (wTm0 * m0Tc0 * c0Tc) * c0Tm0
-                # = (m0Tp0 * pTp0 * p0Tm0) * (m0Tc0 * c0Tc * c0Tm0)
-                self.__local_keypoint_rotations[keypoint_name] = \
-                    parent_orienter.midhip_from_rest @ \
-                    np.linalg.inv(world_from_parent[0:3, 0:3]) @ \
-                    world_from_current[0:3, 0:3] @ \
-                    orienter.rest_from_midhip
-
-            # Otherwise, set the local rotation for the keypoint to the identity matrix (as a default).
-            else:
-                self.__local_keypoint_rotations[keypoint_name] = np.eye(3)
-
     def __try_add_keypoint_orienter(self, keypoint_name: str, other_keypoint_name: str,
-                                    parent_keypoint_name: Optional[str], triangle: Tuple[str, str, str],
-                                    midhip_from_rest: np.ndarray) -> None:
+                                    triangle: Tuple[str, str, str]) -> None:
         """
         Try to add an orienter for the specified keypoint to the skeleton.
 
@@ -377,68 +259,29 @@ class Skeleton3D:
             If the skeleton does not have one or more of the keypoints that the orienter needs,
             no orienter will be added.
 
-        :param keypoint_name:           The name of the keypoint of interest.
-        :param other_keypoint_name:     The name of the other keypoint defining the direction of the y axis.
-        :param parent_keypoint_name:    The name of the parent keypoint in the skeleton (if any) of the keypoint
-                                        of interest.
-        :param triangle:                A triple of keypoint names specifying a triangle that is used to determine
-                                        the direction of the z axis.
-        :param midhip_from_rest:        A 3*3 rotation matrix specifying the transformation from the orientation
-                                        of the keypoint of interest to the orientation of the mid-hip keypoint
-                                        when the skeleton is in its rest pose (a T shape, with arms outstretched).
+        :param keypoint_name:       The name of the keypoint of interest.
+        :param other_keypoint_name: The name of the other keypoint defining the direction of the y axis.
+        :param triangle:            A triple of keypoint names specifying a triangle that is used to determine
+                                    the direction of the z axis.
         """
-        # If any of the keypoints needed by the orienter are missing, early out.
-        for name in [keypoint_name, other_keypoint_name, *triangle]:
-            if self.__keypoints.get(name) is None:
-                return
+        # Try to construct the orienter (note that this may fail if any of the keypoints it needs are missing).
+        orienter = KeypointOrienter.try_make(
+            self.__keypoints, keypoint_name, other_keypoint_name, triangle
+        )  # type: Optional[KeypointOrienter]
 
-        if parent_keypoint_name is not None and self.__keypoints.get(parent_keypoint_name) is None:
-            return
-
-        # Otherwise, construct the orienter and add it to the skeleton.
-        self.__keypoint_orienters[keypoint_name] = Skeleton3D.KeypointOrienter(
-            self, keypoint_name, other_keypoint_name, parent_keypoint_name, triangle, midhip_from_rest
-        )
+        # If the orienter has been successfully constructed, add it to the skeleton.
+        if orienter is not None:
+            self.__keypoint_orienters[keypoint_name] = orienter
 
     def __try_add_keypoint_orienters(self) -> None:
         """Try to add orienters for relevant keypoints to the skeleton."""
-        self.__try_add_keypoint_orienter(
-            "LElbow", "LWrist", "LShoulder", ("LElbow", "LHip", "LWrist"),
-            np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
-        )
-        self.__try_add_keypoint_orienter(
-            "LHip", "LKnee", "MidHip", ("RHip", "LHip", "Neck"),
-            np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
-        )
-        self.__try_add_keypoint_orienter(
-            "LKnee", "LAnkle", "LHip", ("RHip", "LHip", "Neck"),
-            np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
-        )
-        self.__try_add_keypoint_orienter(
-            "LShoulder", "LElbow", "Neck", ("LShoulder", "LHip", "LWrist"),
-            np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
-        )
-        self.__try_add_keypoint_orienter(
-            "MidHip", "Neck", None, ("RHip", "LHip", "Neck"),
-            np.eye(3)
-        )
-        self.__try_add_keypoint_orienter(
-            "Neck", "MidHip", "MidHip", ("LShoulder", "RShoulder", "MidHip"),
-            np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
-        )
-        self.__try_add_keypoint_orienter(
-            "RElbow", "RWrist", "RShoulder", ("RElbow", "RWrist", "RHip"),
-            np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
-        )
-        self.__try_add_keypoint_orienter(
-            "RHip", "RKnee", "MidHip", ("RHip", "LHip", "Neck"),
-            np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
-        )
-        self.__try_add_keypoint_orienter(
-            "RKnee", "RAnkle", "RHip", ("RHip", "LHip", "Neck"),
-            np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
-        )
-        self.__try_add_keypoint_orienter(
-            "RShoulder", "RElbow", "Neck", ("RShoulder", "RWrist", "RHip"),
-            np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
-        )
+        self.__try_add_keypoint_orienter("LElbow", "LWrist", ("LElbow", "LHip", "LWrist"))
+        self.__try_add_keypoint_orienter("LHip", "LKnee", ("RHip", "LHip", "Neck"))
+        self.__try_add_keypoint_orienter("LKnee", "LAnkle", ("RHip", "LHip", "Neck"))
+        self.__try_add_keypoint_orienter("LShoulder", "LElbow", ("LShoulder", "LHip", "LWrist"))
+        self.__try_add_keypoint_orienter("MidHip", "Neck", ("RHip", "LHip", "Neck"))
+        self.__try_add_keypoint_orienter("Neck", "MidHip", ("LShoulder", "RShoulder", "MidHip"))
+        self.__try_add_keypoint_orienter("RElbow", "RWrist", ("RElbow", "RWrist", "RHip"))
+        self.__try_add_keypoint_orienter("RHip", "RKnee", ("RHip", "LHip", "Neck"))
+        self.__try_add_keypoint_orienter("RKnee", "RAnkle", ("RHip", "LHip", "Neck"))
+        self.__try_add_keypoint_orienter("RShoulder", "RElbow", ("RShoulder", "RWrist", "RHip"))
