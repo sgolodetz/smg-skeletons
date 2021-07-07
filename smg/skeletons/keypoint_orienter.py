@@ -75,7 +75,7 @@ class KeypointOrienter:
     @property
     def global_pose(self) -> np.ndarray:
         """
-        The global 6D pose of the keypoint.
+        Get the global 6D pose of the keypoint.
 
         :return:    The global 6D pose of the keypoint.
         """
