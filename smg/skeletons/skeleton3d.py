@@ -43,13 +43,20 @@ class Skeleton3D:
 
         # If both global keypoint poses and local keypoint rotations have been provided from outside, use them.
         if global_keypoint_poses and local_keypoint_rotations:
-            self.__midhip_from_rests = {}                               # type: Dict[str, np.ndarray]
             self.__keypoint_orienters = {}                              # type: Dict[str, KeypointOrienter]
             self.__global_keypoint_poses = global_keypoint_poses        # type: Dict[str, np.ndarray]
+            self.__midhip_from_rests = {}                               # type: Dict[str, np.ndarray]
             self.__local_keypoint_rotations = local_keypoint_rotations  # type: Dict[str, np.ndarray]
 
         # Otherwise, try to compute global poses and local rotations for relevant keypoints in the skeleton.
         else:
+            self.__keypoint_orienters = {}  # type: Dict[str, KeypointOrienter]
+            self.__try_add_keypoint_orienters()
+
+            self.__global_keypoint_poses = {}  # type: Dict[str, np.ndarray]
+            for keypoint_name, orienter in self.keypoint_orienters.items():
+                self.__global_keypoint_poses[keypoint_name] = orienter.global_pose
+
             self.__midhip_from_rests = {
                 "LElbow": np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]),
                 "LHip": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]),
@@ -63,15 +70,23 @@ class Skeleton3D:
                 "RShoulder": np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
             }  # type: Dict[str, np.ndarray]
 
-            self.__keypoint_orienters = {}  # type: Dict[str, KeypointOrienter]
-            self.__try_add_keypoint_orienters()
+            parent_keypoints = {
+                'LElbow': 'LShoulder',
+                'LHip': 'MidHip',
+                'LKnee': 'LHip',
+                'LShoulder': 'Neck',
+                'Neck': 'MidHip',
+                'RElbow': 'RShoulder',
+                'RHip': 'MidHip',
+                'RKnee': 'RHip',
+                'RShoulder': 'Neck'
+            }  # type: Dict[str, str]
 
-            self.__global_keypoint_poses = {}  # type: Dict[str, np.ndarray]
-            for keypoint_name, orienter in self.keypoint_orienters.items():
-                self.__global_keypoint_poses[keypoint_name] = orienter.global_pose
-
-            self.__local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
-            self.__compute_local_keypoint_rotations()
+            self.__local_keypoint_rotations = KeypointUtil.compute_local_keypoint_rotations(
+                global_keypoint_poses=self.__global_keypoint_poses,
+                midhip_from_rests=self.__midhip_from_rests,
+                parent_keypoints=parent_keypoints
+            )
 
     # SPECIAL METHODS
 
@@ -234,26 +249,6 @@ class Skeleton3D:
                 top_centre=base_keypoint.position + top_stretch * (top_keypoint.position - base_keypoint.position),
                 top_radius=top_radius
             ))
-
-    def __compute_local_keypoint_rotations(self) -> None:
-        """Compute the local rotations for relevant keypoints in the skeleton (needed for avatar driving)."""
-        parent_keypoints = {
-            'LElbow': 'LShoulder',
-            'LHip': 'MidHip',
-            'LKnee': 'LHip',
-            'LShoulder': 'Neck',
-            'Neck': 'MidHip',
-            'RElbow': 'RShoulder',
-            'RHip': 'MidHip',
-            'RKnee': 'RHip',
-            'RShoulder': 'Neck'
-        }  # type: Dict[str, str]
-
-        self.__local_keypoint_rotations = KeypointUtil.compute_local_keypoint_rotations(
-            global_keypoint_poses=self.__global_keypoint_poses,
-            midhip_from_rests=self.__midhip_from_rests,
-            parent_keypoints=parent_keypoints
-        )
 
     def __try_add_keypoint_orienter(self, keypoint_name: str, other_keypoint_name: str,
                                     triangle: Tuple[str, str, str]) -> None:
