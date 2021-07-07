@@ -49,12 +49,14 @@ class Skeleton3D:
 
         # Otherwise, try to compute global poses and local rotations for relevant keypoints in the skeleton.
         else:
-            self.__keypoint_orienters = {}        # type: Dict[str, KeypointOrienter]
-            self.__global_keypoint_poses = {}     # type: Dict[str, np.ndarray]
-            self.__local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
-
+            self.__keypoint_orienters = {}  # type: Dict[str, KeypointOrienter]
             self.__try_add_keypoint_orienters()
-            self.__compute_global_keypoint_poses()
+
+            self.__global_keypoint_poses = {}  # type: Dict[str, np.ndarray]
+            for keypoint_name, orienter in self.keypoint_orienters.items():
+                self.__global_keypoint_poses[keypoint_name] = orienter.global_pose
+
+            self.__local_keypoint_rotations = {}  # type: Dict[str, np.ndarray]
             self.__compute_local_keypoint_rotations()
 
     # SPECIAL METHODS
@@ -206,12 +208,6 @@ class Skeleton3D:
                 top_centre=base_keypoint.position + top_stretch * (top_keypoint.position - base_keypoint.position),
                 top_radius=top_radius
             ))
-
-    def __compute_global_keypoint_poses(self) -> None:
-        """Compute the global poses for relevant keypoints (as keypoint space to world space transformations)."""
-        # TODO: Tidy this up.
-        for keypoint_name, orienter in self.keypoint_orienters.items():
-            self.__global_keypoint_poses[keypoint_name] = orienter.global_pose
 
     def __compute_local_keypoint_rotations(self) -> None:
         """Compute the local rotations for relevant keypoints in the skeleton (needed for avatar driving)."""
