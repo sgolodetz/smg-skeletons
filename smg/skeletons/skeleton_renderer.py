@@ -85,7 +85,7 @@ class SkeletonRenderer:
 
             # Render the rest orientation of the associated keypoint at its current position.
             world_from_rest = skeleton.global_keypoint_poses[keypoint_name].copy()  # type: np.ndarray
-            world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ orienter.midhip_from_rest
+            world_from_rest[0:3, 0:3] = world_from_midhip[0:3, 0:3] @ skeleton.midhip_from_rests[keypoint_name]
 
             glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT)
             glLineStipple(1, 0xCCCC)
