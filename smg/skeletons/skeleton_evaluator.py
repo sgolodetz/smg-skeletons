@@ -11,23 +11,19 @@ class SkeletonEvaluator:
 
     # CONSTRUCTOR
 
-    def __init__(self):
-        self.__keypoint_to_index_map: Dict[str, int] = {
-            "LAnkle": 0,
-            "LElbow": 1,
-            "LHip": 2,
-            "LKnee": 3,
-            "LShoulder": 4,
-            "LWrist": 5,
-            "Neck": 6,
-            "Nose": 7,
-            "RAnkle": 8,
-            "RElbow": 9,
-            "RHip": 10,
-            "RKnee": 11,
-            "RShoulder": 12,
-            "RWrist": 13
-        }
+    def __init__(self, relevant_keypoints: List[str]):
+        self.__keypoint_to_index_map: Dict[str, int] = dict(
+            zip(relevant_keypoints, np.arange(len(relevant_keypoints)))
+        )
+
+    # PUBLIC STATIC METHODS
+
+    @staticmethod
+    def make_default() -> "SkeletonEvaluator":
+        return SkeletonEvaluator([
+            "LAnkle", "LElbow", "LHip", "LKnee", "LShoulder", "LWrist", "Neck", "Nose",
+            "RAnkle", "RElbow", "RHip", "RKnee", "RShoulder", "RWrist"
+        ])
 
     # PUBLIC METHODS
 
