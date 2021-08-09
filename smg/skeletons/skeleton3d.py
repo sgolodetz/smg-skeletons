@@ -203,6 +203,12 @@ class Skeleton3D:
         self.__local_keypoint_rotations = {}
         return self
 
+    def transform(self, m: np.ndarray) -> "Skeleton3D":
+        new_keypoints = {
+            keypoint_name: keypoint.transform(m) for keypoint_name, keypoint in self.__keypoints.items()
+        }  # type: Dict[str, Keypoint]
+        return Skeleton3D(new_keypoints, self.__keypoint_pairs)
+
     # PRIVATE METHODS
 
     def __add_bounding_shapes(self) -> None:
