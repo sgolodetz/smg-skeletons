@@ -1,10 +1,12 @@
 import cv2
 import numpy as np
+import os
 
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from smg.utility import GeometryUtil
 
+from .keypoint import Keypoint
 from .skeleton3d import Skeleton3D
 
 
@@ -139,3 +141,22 @@ class SkeletonUtil:
             (min_z <= zs) & (zs <= max_z),
             255, 0
         ).astype(np.uint8)
+
+    @staticmethod
+    def save_skeletons(filename: str, skeletons: List[Skeleton3D]) -> None:
+        with open(filename, "w") as f:
+            f.write(repr(skeletons))
+
+    @staticmethod
+    def string_to_skeletons(skeletons_repr: str) -> List[Skeleton3D]:
+        return eval(
+            skeletons_repr, {'array': np.array, 'Keypoint': Keypoint, 'Skeleton3D': Skeleton3D}
+        )
+
+    @staticmethod
+    def try_load_skeletons(filename: str) -> Optional[List[Skeleton3D]]:
+        if os.path.exists(filename):
+            with open(filename, "r") as f:
+                return SkeletonUtil.string_to_skeletons(f.read())
+        else:
+            return None
