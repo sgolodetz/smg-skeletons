@@ -19,6 +19,10 @@ class SkeletonEvaluator:
     # PUBLIC STATIC METHODS
 
     @staticmethod
+    def make_correct_keypoint_table(per_joint_error_table: np.ndarray, *, threshold: float = 0.15) -> np.ndarray:
+        return np.where(per_joint_error_table <= threshold, 1, 0).astype(np.uint8)
+
+    @staticmethod
     def make_default() -> "SkeletonEvaluator":
         return SkeletonEvaluator([
             "LAnkle", "LElbow", "LHip", "LKnee", "LShoulder", "LWrist", "Neck", "Nose",
@@ -34,12 +38,18 @@ class SkeletonEvaluator:
             pcks[keypoint_name] = 100 * np.sum(correct_keypoint_table[:, keypoint_index]).item() / row_count
         return pcks
 
-    def make_correct_keypoint_table(self, matched_skeletons: List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]], *,
-                                    threshold: float = 0.15) -> np.ndarray:
+    def calculate_mpjpes(self, per_joint_error_table: np.ndarray) -> Dict[str, float]:
+        mpjpes: Dict[str, float] = dict()
+        for keypoint_name, keypoint_index in self.__keypoint_to_index_map.items():
+            mpjpes[keypoint_name] = np.nanmean(per_joint_error_table[:, keypoint_index]).item()
+        return mpjpes
+
+    def make_per_joint_error_table(self, matched_skeletons: List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]) \
+            -> np.ndarray:
         rows: List[np.ndarray] = []
 
         for frame in matched_skeletons:
-            row: np.ndarray = np.zeros(len(self.__keypoint_to_index_map), dtype=np.uint8)
+            row: np.ndarray = np.full(len(self.__keypoint_to_index_map), np.nan)
 
             for gt_skeleton, detected_skeleton in frame:
                 if detected_skeleton is None:
@@ -49,9 +59,7 @@ class SkeletonEvaluator:
                     keypoint_index: Optional[int] = self.__keypoint_to_index_map.get(keypoint_name)
                     detected_keypoint: Optional[Keypoint] = detected_skeleton.keypoints.get(keypoint_name)
                     if keypoint_index is not None and detected_keypoint is not None:
-                        distance: float = np.linalg.norm(detected_keypoint.position - gt_keypoint.position)
-                        if distance <= threshold:
-                            row[keypoint_index] = 1
+                        row[keypoint_index] = np.linalg.norm(detected_keypoint.position - gt_keypoint.position)
 
             rows.append(row)
 
