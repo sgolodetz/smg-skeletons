@@ -69,10 +69,10 @@ class SkeletonEvaluator:
 
     def calculate_mpjpes(self, per_joint_error_table: np.ndarray) -> Dict[str, float]:
         """
-        TODO
+        Calculate the mean (over all skeleton matches and all frames) position errors for each relevant joint type.
 
-        :param per_joint_error_table:   TODO
-        :return:                        TODO
+        :param per_joint_error_table:   The per-joint position error table.
+        :return:                        A dictionary mapping joint names to their mean position errors.
         """
         mpjpes = dict()  # type: Dict[str, float]
 
@@ -84,10 +84,11 @@ class SkeletonEvaluator:
     def make_per_joint_error_table(self, matched_skeletons: List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]) \
             -> np.ndarray:
         """
-        TODO
+        Make a table in which each row contains the per-joint position errors (in m) for a matched ground truth
+        and detected skeleton pair.
 
-        :param matched_skeletons:   TODO
-        :return:                    TODO
+        :param matched_skeletons:   A table of the matched ground truth and detected skeletons.
+        :return:                    The per-joint position error table.
         """
         rows = []  # type: List[np.ndarray]
 
