@@ -7,11 +7,16 @@ from .skeleton3d import Skeleton3D
 
 
 class SkeletonEvaluator:
-    """Functions to evaluate the skeleton estimation quality."""
+    """An evaluator used to evaluate the quality of any skeletons that have been detected."""
 
     # CONSTRUCTOR
 
     def __init__(self, relevant_keypoints: List[str]):
+        """
+        Construct a skeleton evaluator.
+
+        :param relevant_keypoints:  The keypoints to include in the evaluation.
+        """
         self.__keypoint_to_index_map = dict(
             zip(relevant_keypoints, np.arange(len(relevant_keypoints)))
         )  # type: Dict[str, int]
@@ -20,10 +25,26 @@ class SkeletonEvaluator:
 
     @staticmethod
     def make_correct_keypoint_table(per_joint_error_table: np.ndarray, *, threshold: float = 0.15) -> np.ndarray:
+        """
+        TODO
+
+        :param per_joint_error_table:   TODO
+        :param threshold:               TODO
+        :return:                        TODO
+        """
         return np.where(per_joint_error_table <= threshold, 1, 0).astype(np.uint8)
 
     @staticmethod
     def make_default() -> "SkeletonEvaluator":
+        """
+        Make a skeleton evaluator that bases its evaluation on a simplified 14-keypoint model.
+
+        .. note::
+            The various skeleton detectors predict different sets of keypoints, but pretty much all of them
+            predict at least these ones.
+
+        :return:    The skeleton evaluator.
+        """
         return SkeletonEvaluator([
             "LAnkle", "LElbow", "LHip", "LKnee", "LShoulder", "LWrist", "Neck", "Nose",
             "RAnkle", "RElbow", "RHip", "RKnee", "RShoulder", "RWrist"
@@ -32,6 +53,12 @@ class SkeletonEvaluator:
     # PUBLIC METHODS
 
     def calculate_3d_pcks(self, correct_keypoint_table: np.ndarray) -> Dict[str, float]:
+        """
+        TODO
+
+        :param correct_keypoint_table:  TODO
+        :return:                        TODO
+        """
         pcks = dict()                                # type: Dict[str, float]
         row_count = correct_keypoint_table.shape[0]  # type: int
 
@@ -41,6 +68,12 @@ class SkeletonEvaluator:
         return pcks
 
     def calculate_mpjpes(self, per_joint_error_table: np.ndarray) -> Dict[str, float]:
+        """
+        TODO
+
+        :param per_joint_error_table:   TODO
+        :return:                        TODO
+        """
         mpjpes = dict()  # type: Dict[str, float]
 
         for keypoint_name, keypoint_index in self.__keypoint_to_index_map.items():
@@ -50,6 +83,12 @@ class SkeletonEvaluator:
 
     def make_per_joint_error_table(self, matched_skeletons: List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]) \
             -> np.ndarray:
+        """
+        TODO
+
+        :param matched_skeletons:   TODO
+        :return:                    TODO
+        """
         rows = []  # type: List[np.ndarray]
 
         for frame in matched_skeletons:
@@ -72,5 +111,12 @@ class SkeletonEvaluator:
     def match_detections_with_ground_truth(
         self, *, detected_skeletons: List[List[Skeleton3D]], gt_skeletons: List[List[Skeleton3D]]
     ) -> List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]:
+        """
+        TODO
+
+        :param detected_skeletons:  TODO
+        :param gt_skeletons:        TODO
+        :return:                    TODO
+        """
         # TODO
         pass
