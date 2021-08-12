@@ -62,5 +62,11 @@ class Keypoint:
     # PUBLIC METHODS
 
     def transform(self, m: np.ndarray) -> "Keypoint":
+        """
+        Make a copy of the keypoint whose position has been transformed by the specified transformation.
+
+        :param m:   The transformation to apply.
+        :return:    A copy of the keypoint whose position has been transformed by the specified transformation.
+        """
         new_position = GeometryUtil.apply_rigid_transform(m, self.__position)  # type: np.ndarray
         return Keypoint(self.__name, new_position, self.__score)

@@ -204,6 +204,20 @@ class Skeleton3D:
         return self
 
     def transform(self, m: np.ndarray) -> "Skeleton3D":
+        """
+        Make a copy of the skeleton whose keypoints have been transformed by the specified transformation.
+
+        .. note::
+            We currently calculate the global keypoint poses and local keypoint rotations for the copy
+            using our internal approach, rather than transforming the ones in the existing skeleton.
+            This is correct for skeletons where these were calculated internally to start with, but
+            isn't for those where these were originally calculated externally and passed in. At some
+            point we should fix this, but it's low priority as our internal approach is the default.
+
+        :param m:   The transformation to apply.
+        :return:    A copy of the skeleton whose keypoints have been transformed by the specified transformation.
+        """
+        # FIXME: We should ultimately also transform the global keypoint poses and local keypoint rotations.
         new_keypoints = {
             keypoint_name: keypoint.transform(m) for keypoint_name, keypoint in self.__keypoints.items()
         }  # type: Dict[str, Keypoint]
