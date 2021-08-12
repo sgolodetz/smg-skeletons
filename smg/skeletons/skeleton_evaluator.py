@@ -120,8 +120,8 @@ class SkeletonEvaluator:
 
         .. note::
             We suppress false positive detections (these can be evaluated separately if desired) and focus only
-            on trying to find a match for each ground truth skeleton. Some ground truth skeletons may not have
-            a match, in which case their pair will be of the form (ground truth skeleton, None).
+            on trying to find a match for each ground truth skeleton. A particular ground truth skeleton may not
+            have a match, in which case its pair will be of the form (ground truth skeleton, None).
 
         :param detected_skeletons:  A list of lists of detected skeletons (one list for each frame).
         :param gt_skeletons:        A list of lists of ground truth skeletons (one list for each frame).
