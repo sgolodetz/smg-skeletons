@@ -26,11 +26,14 @@ class SkeletonEvaluator:
     @staticmethod
     def make_correct_keypoint_table(per_joint_error_table: np.ndarray, *, threshold: float = 0.15) -> np.ndarray:
         """
-        TODO
+        Make a table in which each row contains a list of flags (1 for correct, 0 for incorrect) for a matched
+        ground truth and detected skeleton pair, denoting which detected joints (if any) are less than a
+        specified distance from the ground truth.
 
-        :param per_joint_error_table:   TODO
-        :param threshold:               TODO
-        :return:                        TODO
+        :param per_joint_error_table:   The per-joint position error table.
+        :param threshold:               The maximum distance (in m) a detected joint can be from the ground truth
+                                        to be considered "correct".
+        :return:                        The correct keypoint table.
         """
         return np.where(per_joint_error_table <= threshold, 1, 0).astype(np.uint8)
 
@@ -52,21 +55,6 @@ class SkeletonEvaluator:
 
     # PUBLIC METHODS
 
-    def calculate_3d_pcks(self, correct_keypoint_table: np.ndarray) -> Dict[str, float]:
-        """
-        TODO
-
-        :param correct_keypoint_table:  TODO
-        :return:                        TODO
-        """
-        pcks = dict()                                # type: Dict[str, float]
-        row_count = correct_keypoint_table.shape[0]  # type: int
-
-        for keypoint_name, keypoint_index in self.__keypoint_to_index_map.items():
-            pcks[keypoint_name] = 100 * np.sum(correct_keypoint_table[:, keypoint_index]).item() / row_count
-
-        return pcks
-
     def calculate_mpjpes(self, per_joint_error_table: np.ndarray) -> Dict[str, float]:
         """
         Calculate the mean (over all skeleton matches and all frames) position errors for each relevant joint type.
@@ -80,6 +68,21 @@ class SkeletonEvaluator:
             mpjpes[keypoint_name] = np.nanmean(per_joint_error_table[:, keypoint_index]).item()
 
         return mpjpes
+
+    def calculate_pcks(self, correct_keypoint_table: np.ndarray) -> Dict[str, float]:
+        """
+        Calculate correctness percentages for each relevant joint type.
+
+        :param correct_keypoint_table:  The correct keypoint table.
+        :return:                        A dictionary mapping joint names to their correctness percentages.
+        """
+        pcks = dict()                                # type: Dict[str, float]
+        row_count = correct_keypoint_table.shape[0]  # type: int
+
+        for keypoint_name, keypoint_index in self.__keypoint_to_index_map.items():
+            pcks[keypoint_name] = 100 * np.sum(correct_keypoint_table[:, keypoint_index]).item() / row_count
+
+        return pcks
 
     def make_per_joint_error_table(self, matched_skeletons: List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]) \
             -> np.ndarray:
@@ -113,11 +116,17 @@ class SkeletonEvaluator:
         self, *, detected_skeletons: List[List[Skeleton3D]], gt_skeletons: List[List[Skeleton3D]]
     ) -> List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]:
         """
-        TODO
+        Match the detected skeletons with the ground truth ones in each frame.
 
-        :param detected_skeletons:  TODO
-        :param gt_skeletons:        TODO
-        :return:                    TODO
+        .. note::
+            We suppress false positive detections (these can be evaluated separately if desired) and focus only
+            on trying to find a match for each ground truth skeleton. Some ground truth skeletons may not have
+            a match, in which case their pair will be of the form (ground truth skeleton, None).
+
+        :param detected_skeletons:  A list of lists of detected skeletons (one list for each frame).
+        :param gt_skeletons:        A list of lists of ground truth skeletons (one list for each frame).
+        :return:                    A list of lists of matched ground truth and detected skeleton pairs (one list
+                                    for each frame).
         """
-        # TODO
-        pass
+        # TODO: Not yet implemented.
+        raise NotImplementedError()
