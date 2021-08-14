@@ -1,10 +1,12 @@
 import cv2
 import numpy as np
+import os
 
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from smg.utility import GeometryUtil
 
+from .keypoint import Keypoint
 from .skeleton3d import Skeleton3D
 
 
@@ -139,3 +141,51 @@ class SkeletonUtil:
             (min_z <= zs) & (zs <= max_z),
             255, 0
         ).astype(np.uint8)
+
+    @staticmethod
+    def save_skeletons(filename: str, skeletons: List[Skeleton3D]) -> None:
+        """
+        Save a list of skeletons to a file.
+
+        :param filename:    The name of the file.
+        :param skeletons:   The list of skeletons.
+        """
+        with open(filename, "w") as f:
+            f.write(repr(skeletons))
+
+    @staticmethod
+    def string_to_skeletons(skeletons_repr: str) -> List[Skeleton3D]:
+        """
+        Convert a (trusted) string that contains the representation of a list of skeletons into the list itself.
+
+        :param skeletons_repr:  A string representation of a list of skeletons.
+        :return:                The corresponding list of skeletons.
+        """
+        return eval(
+            skeletons_repr, {'array': np.array, 'Keypoint': Keypoint, 'Skeleton3D': Skeleton3D}
+        )
+
+    @staticmethod
+    def try_load_skeletons(filename: str) -> Optional[List[Skeleton3D]]:
+        """
+        Try to load a list of skeletons from a file.
+
+        .. note::
+            There are lots of things that could go wrong here, in principle, and lots of different exceptions
+            that could be raised as a result. However, this function is only ever used on files we trust, and
+            that were saved with save_skeletons. As a result, the only thing that's really likely to go wrong
+            is that the file's missing for some reason, e.g. because we specified the wrong path. For that
+            reason, we don't devote lots of effort to trying to handle all of the different types of error
+            explicitly, and instead just return None if anything at all goes wrong. We can't do much better
+            than that anyway, since string_to_skeletons uses eval internally, which is inherently unsafe and
+            shouldn't be called on untrusted inputs.
+
+        :param filename:    The name of the file.
+        :return:            The list of skeletons, if successful, or None otherwise.
+        """
+        # noinspection PyBroadException
+        try:
+            with open(filename, "r") as f:
+                return SkeletonUtil.string_to_skeletons(f.read())
+        except Exception:
+            return None
