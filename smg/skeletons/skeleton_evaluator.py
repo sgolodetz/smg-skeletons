@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 from typing import Dict, List, Optional, Tuple
 
@@ -65,7 +66,9 @@ class SkeletonEvaluator:
         mpjpes = dict()  # type: Dict[str, float]
 
         for keypoint_name, keypoint_index in self.__keypoint_to_index_map.items():
-            mpjpes[keypoint_name] = np.nanmean(per_joint_error_table[:, keypoint_index]).item()
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                mpjpes[keypoint_name] = np.nanmean(per_joint_error_table[:, keypoint_index]).item()
 
         return mpjpes
 
