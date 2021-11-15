@@ -25,6 +25,26 @@ class SkeletonEvaluator:
     # PUBLIC STATIC METHODS
 
     @staticmethod
+    def calculate_distance_between_skeletons(skeleton1: Skeleton3D, skeleton2: Skeleton3D) -> float:
+        """
+        TODO
+
+        :param skeleton1:   TODO
+        :param skeleton2:   TODO
+        :return:            TODO
+        """
+        offsets = []
+
+        for keypoint_name, keypoint1 in skeleton1.keypoints.items():
+            keypoint2 = skeleton2.keypoints.get(keypoint_name)
+            if keypoint2 is not None:
+                offsets.append(np.linalg.norm(keypoint2.position - keypoint1.position))
+
+        return np.mean(offsets) if len(offsets) > 0 else np.inf
+
+    # PUBLIC STATIC METHODS
+
+    @staticmethod
     def make_correct_keypoint_table(per_joint_error_table: np.ndarray, *, threshold: float = 0.15) -> np.ndarray:
         """
         Make a table in which each row contains a list of flags (1 for correct, 0 for incorrect) for a matched
