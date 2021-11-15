@@ -16,6 +16,35 @@ class SkeletonUtil:
     # PUBLIC STATIC METHODS
 
     @staticmethod
+    def calculate_distance_between_skeletons(skeleton1: Skeleton3D, skeleton2: Skeleton3D) -> float:
+        """
+        Calculate a distance metric between two skeletons.
+
+        .. note::
+            This is useful for skeleton matching.
+        .. note::
+            In practice, the distance we use is the average distance between corresponding keypoints.
+            However, that's not part of the this function's interface, and shouldn't be relied upon.
+
+        :param skeleton1:   The first skeleton.
+        :param skeleton2:   The second skeleton.
+        :return:            The distance metric between the skeletons.
+        """
+        distances = []
+
+        # For each keypoint in the first skeleton:
+        for keypoint_name, keypoint1 in skeleton1.keypoints.items():
+            # If the second skeleton has a keypoint with the same name:
+            keypoint2 = skeleton2.keypoints.get(keypoint_name)
+            if keypoint2 is not None:
+                # Calculate the distance between the corresponding keypoints and append it to the list.
+                distances.append(np.linalg.norm(keypoint2.position - keypoint1.position))
+
+        # If there were any corresponding keypoints at all, calculate and return the average distance
+        # between the pairs of corresponding keypoints; otherwise, return an infinite distance.
+        return np.mean(distances) if len(distances) > 0 else np.inf
+
+    @staticmethod
     def depopulate_depth_image(depth_image: np.ndarray, people_mask: np.ndarray, *, debug: bool = False) -> np.ndarray:
         """
         Make a 'depopulated' version of a depth image from which the detected people have been removed
