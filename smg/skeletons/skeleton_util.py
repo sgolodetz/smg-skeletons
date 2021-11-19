@@ -24,7 +24,7 @@ class SkeletonUtil:
             This is useful for skeleton matching.
         .. note::
             In practice, the distance we use is the average distance between corresponding keypoints.
-            However, that's not part of the this function's interface, and shouldn't be relied upon.
+            However, that's not part of the function's interface, and shouldn't be relied upon.
 
         :param skeleton1:   The first skeleton.
         :param skeleton2:   The second skeleton.
