@@ -10,7 +10,7 @@ from .skeleton3d import Skeleton3D
 
 
 class PeopleMaskRenderer:
-    """A renderer that can be used to render a people mask from a list of skeletons."""
+    """A renderer that can be used to render a people mask for a list of skeletons."""
 
     # CONSTRUCTOR
 
