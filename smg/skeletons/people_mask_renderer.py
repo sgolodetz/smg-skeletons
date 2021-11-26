@@ -10,11 +10,12 @@ from .skeleton3d import Skeleton3D
 
 
 class PeopleMaskRenderer:
-    """TODO"""
+    """A renderer that can be used to render a people mask from a list of skeletons."""
 
     # CONSTRUCTOR
 
     def __init__(self):
+        """Construct a people mask renderer."""
         self.__framebuffer = None  # type: Optional[OpenGLFrameBuffer]
 
     # PUBLIC METHODS
@@ -22,6 +23,17 @@ class PeopleMaskRenderer:
     def render_people_mask(self, render_person_mask: Callable[[Skeleton3D], None], skeletons: List[Skeleton3D],
                            world_from_camera: np.ndarray, intrinsics: Optional[Tuple[float, float, float, float]],
                            width: int, height: int) -> np.ndarray:
+        """
+        Render a people mask for a list of skeletons.
+
+        :param render_person_mask:  The function to use to render the mask for an individual person.
+        :param skeletons:           The list of skeletons for which to render the people mask.
+        :param world_from_camera:   The camera pose.
+        :param intrinsics:          The camera intrinsics, if available, as an (fx, fy, cx, cy) tuple.
+        :param width:               The image width.
+        :param height:              The image height.
+        :return:                    The people mask, if the camera intrinsics are available, or None otherwise.
+        """
         # If the camera intrinsics aren't available, early out.
         if intrinsics is None:
             return np.zeros((height, width), dtype=np.uint8)
