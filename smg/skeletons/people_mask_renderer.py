@@ -15,7 +15,7 @@ class PeopleMaskRenderer:
     # CONSTRUCTOR
 
     def __init__(self):
-        self.__framebuffer: Optional[OpenGLFrameBuffer] = None
+        self.__framebuffer = None  # type: Optional[OpenGLFrameBuffer]
 
     # PUBLIC METHODS
 
