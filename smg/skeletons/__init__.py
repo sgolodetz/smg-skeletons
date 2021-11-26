@@ -1,6 +1,7 @@
 from .keypoint import Keypoint
 from .keypoint_orienter import KeypointOrienter
 from .keypoint_util import KeypointUtil
+from .people_mask_renderer import PeopleMaskRenderer
 from .skeleton2d import Skeleton2D
 from .skeleton3d import Skeleton3D
 from .skeleton_evaluator import SkeletonEvaluator
