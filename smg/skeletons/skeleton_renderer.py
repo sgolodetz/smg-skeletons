@@ -118,11 +118,12 @@ class SkeletonRenderer:
             glPopAttrib()
 
     @staticmethod
-    def render_skeleton(skeleton: Skeleton3D) -> None:
+    def render_skeleton(skeleton: Skeleton3D, *, uniform_colour: Optional[Tuple[float, float, float]] = None) -> None:
         """
         Render the specified 3D skeleton using OpenGL.
 
-        :param skeleton:    The 3D skeleton.
+        :param skeleton:        The 3D skeleton.
+        :param uniform_colour:  An optional uniform colour to use for the skeleton instead of the default colours.
         """
         bone_colours = {
             ('MidHip', 'Neck'): np.array([153., 0., 0.]),
@@ -155,14 +156,21 @@ class SkeletonRenderer:
 
         # Render the keypoints themselves, colouring them on a scale according to their score (0 = red, 1 = green).
         for keypoint_name, keypoint in skeleton.keypoints.items():
-            glColor3f(1 - keypoint.score, keypoint.score, 0.0)
+            if uniform_colour is not None:
+                glColor3f(*uniform_colour)
+            else:
+                glColor3f(1 - keypoint.score, keypoint.score, 0.0)
+
             OpenGLUtil.render_sphere(keypoint.position, 0.03, slices=10, stacks=10)
 
         # Render the bones between the keypoints.
         for keypoint1, keypoint2 in skeleton.bones:
             bone_key = Skeleton3D.make_bone_key(keypoint1, keypoint2)  # type: Tuple[str, str]
-            bone_colour = bone_colours.get(bone_key)  # type: Optional[np.ndarray]
-            if bone_colour is not None:
+            bone_colour = bone_colours.get(bone_key)                   # type: Optional[np.ndarray]
+
+            if uniform_colour is not None:
+                glColor3f(*uniform_colour)
+            elif bone_colour is not None:
                 # Note: We divide by 153 because that's the maximum value of a component in the colours table,
                 #       and we want the colours to be nice and vibrant.
                 bone_colour = bone_colour / 153
