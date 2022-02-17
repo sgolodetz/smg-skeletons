@@ -121,21 +121,21 @@ class SkeletonEvaluator:
 
         :param matched_skeletons:   The list of matched skeletons.
         """
-        mpjpes: Dict[str, float] = {}
-        pcks: Dict[str, float] = {}
+        mpjpes = {}  # type: Dict[str, float]
+        pcks = {}    # type: Dict[str, float]
 
         # If we've previously established at least one skeleton match:
         if len(matched_skeletons) > 0:
             # Calculate the MPJPEs (in m).
-            per_joint_error_table: np.ndarray = self.make_per_joint_error_table(matched_skeletons)
-            mpjpes: Dict[str, float] = self.calculate_mpjpes(per_joint_error_table)
+            per_joint_error_table = self.make_per_joint_error_table(matched_skeletons)  # type: np.ndarray
+            mpjpes = self.calculate_mpjpes(per_joint_error_table)  # type: Dict[str, float]
 
             # Calculate the 3DPCKs, using the standard threshold of 15cm.
-            correct_keypoint_table: np.ndarray = SkeletonEvaluator.make_correct_keypoint_table(
+            correct_keypoint_table = SkeletonEvaluator.make_correct_keypoint_table(
                 per_joint_error_table, threshold=0.15
-            )
-            pcks: Dict[str, float] = self.calculate_pcks(correct_keypoint_table)
+            )  # type: np.ndarray
+            pcks = self.calculate_pcks(correct_keypoint_table)  # type: Dict[str, float]
 
         # Print out the metrics.
-        print(f"MPJPEs: {mpjpes}")
-        print(f"3DPCKs: {pcks}")
+        print("MPJPEs: {}".format(mpjpes))
+        print("3DPCKs: {}".format(pcks))

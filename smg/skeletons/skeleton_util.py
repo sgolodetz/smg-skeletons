@@ -185,17 +185,19 @@ class SkeletonUtil:
         :param gt_skeletons:        A list of ground truth skeletons.
         :return:                    A list of matched ground truth and detected skeleton pairs.
         """
-        matches: List[Tuple[Skeleton3D, Optional[Skeleton3D]]] = []
-        used_detections: Set[int] = set()
+        matches = []             # type: List[Tuple[Skeleton3D, Optional[Skeleton3D]]]
+        used_detections = set()  # type: Set[int]
 
         for i in range(len(gt_skeletons)):
-            gt_skeleton: Skeleton3D = gt_skeletons[i]
-            smallest_distance: float = np.inf
-            smallest_index: int = -1
+            gt_skeleton = gt_skeletons[i]  # type: Skeleton3D
+            smallest_distance = np.inf     # type: float
+            smallest_index = -1            # type: int
 
             for j in range(len(detected_skeletons)):
-                detected_skeleton: Skeleton3D = detected_skeletons[j]
-                distance: float = SkeletonUtil.calculate_distance_between_skeletons(gt_skeleton, detected_skeleton)
+                detected_skeleton = detected_skeletons[j]  # type: Skeleton3D
+                distance = SkeletonUtil.calculate_distance_between_skeletons(
+                    gt_skeleton, detected_skeleton
+                )  # type: float
                 if distance < smallest_distance:
                     smallest_distance = distance
                     smallest_index = j
