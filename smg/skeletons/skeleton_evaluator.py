@@ -114,22 +114,3 @@ class SkeletonEvaluator:
             rows.append(row)
 
         return np.vstack(rows)
-
-    def match_detections_with_ground_truth(
-        self, *, detected_skeletons: List[List[Skeleton3D]], gt_skeletons: List[List[Skeleton3D]]
-    ) -> List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]:
-        """
-        Match the detected skeletons with the ground truth ones in each frame.
-
-        .. note::
-            We suppress false positive detections (these can be evaluated separately if desired) and focus only
-            on trying to find a match for each ground truth skeleton. A particular ground truth skeleton may not
-            have a match, in which case its pair will be of the form (ground truth skeleton, None).
-
-        :param detected_skeletons:  A list of lists of detected skeletons (one list for each frame).
-        :param gt_skeletons:        A list of lists of ground truth skeletons (one list for each frame).
-        :return:                    A list of lists of matched ground truth and detected skeleton pairs (one list
-                                    for each frame).
-        """
-        # TODO: Not yet implemented.
-        raise NotImplementedError()
