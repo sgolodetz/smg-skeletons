@@ -114,3 +114,28 @@ class SkeletonEvaluator:
             rows.append(row)
 
         return np.vstack(rows)
+
+    def print_metrics(self, matched_skeletons: List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]) -> None:
+        """
+        Calculate the evaluation metrics for all the matches we've seen so far, and print them out.
+
+        :param matched_skeletons:   The list of matched skeletons.
+        """
+        mpjpes: Dict[str, float] = {}
+        pcks: Dict[str, float] = {}
+
+        # If we've previously established at least one skeleton match:
+        if len(matched_skeletons) > 0:
+            # Calculate the MPJPEs (in m).
+            per_joint_error_table: np.ndarray = self.make_per_joint_error_table(matched_skeletons)
+            mpjpes: Dict[str, float] = self.calculate_mpjpes(per_joint_error_table)
+
+            # Calculate the 3DPCKs, using the standard threshold of 15cm.
+            correct_keypoint_table: np.ndarray = SkeletonEvaluator.make_correct_keypoint_table(
+                per_joint_error_table, threshold=0.15
+            )
+            pcks: Dict[str, float] = self.calculate_pcks(correct_keypoint_table)
+
+        # Print out the metrics.
+        print(f"MPJPEs: {mpjpes}")
+        print(f"3DPCKs: {pcks}")
