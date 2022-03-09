@@ -115,21 +115,27 @@ class SkeletonEvaluator:
 
         return np.vstack(rows)
 
-    def match_detections_with_ground_truth(
-        self, *, detected_skeletons: List[List[Skeleton3D]], gt_skeletons: List[List[Skeleton3D]]
-    ) -> List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]:
+    def print_metrics(self, matched_skeletons: List[List[Tuple[Skeleton3D, Optional[Skeleton3D]]]]) -> None:
         """
-        Match the detected skeletons with the ground truth ones in each frame.
+        Calculate the evaluation metrics for all the matches we've seen so far, and print them out.
 
-        .. note::
-            We suppress false positive detections (these can be evaluated separately if desired) and focus only
-            on trying to find a match for each ground truth skeleton. A particular ground truth skeleton may not
-            have a match, in which case its pair will be of the form (ground truth skeleton, None).
-
-        :param detected_skeletons:  A list of lists of detected skeletons (one list for each frame).
-        :param gt_skeletons:        A list of lists of ground truth skeletons (one list for each frame).
-        :return:                    A list of lists of matched ground truth and detected skeleton pairs (one list
-                                    for each frame).
+        :param matched_skeletons:   The list of matched skeletons.
         """
-        # TODO: Not yet implemented.
-        raise NotImplementedError()
+        mpjpes = {}  # type: Dict[str, float]
+        pcks = {}    # type: Dict[str, float]
+
+        # If we've previously established at least one skeleton match:
+        if len(matched_skeletons) > 0:
+            # Calculate the MPJPEs (in m).
+            per_joint_error_table = self.make_per_joint_error_table(matched_skeletons)  # type: np.ndarray
+            mpjpes = self.calculate_mpjpes(per_joint_error_table)  # type: Dict[str, float]
+
+            # Calculate the 3DPCKs, using the standard threshold of 15cm.
+            correct_keypoint_table = SkeletonEvaluator.make_correct_keypoint_table(
+                per_joint_error_table, threshold=0.15
+            )  # type: np.ndarray
+            pcks = self.calculate_pcks(correct_keypoint_table)  # type: Dict[str, float]
+
+        # Print out the metrics.
+        print("MPJPEs: {}".format(mpjpes))
+        print("3DPCKs: {}".format(pcks))

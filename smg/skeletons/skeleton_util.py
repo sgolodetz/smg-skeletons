@@ -1,8 +1,7 @@
 import cv2
 import numpy as np
-import os
 
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 from smg.utility import GeometryUtil
 
@@ -170,6 +169,46 @@ class SkeletonUtil:
             (min_z <= zs) & (zs <= max_z),
             255, 0
         ).astype(np.uint8)
+
+    @staticmethod
+    def match_detections_with_ground_truth(*, detected_skeletons: List[Skeleton3D], gt_skeletons: List[Skeleton3D]) \
+            -> List[Tuple[Skeleton3D, Optional[Skeleton3D]]]:
+        """
+        Match a list of detected skeletons with a list of ground truth ones.
+
+        .. note::
+            We suppress false positive detections (these can be evaluated separately if desired) and focus only
+            on trying to find a match for each ground truth skeleton. A particular ground truth skeleton may not
+            have a match, in which case its pair will be of the form (ground truth skeleton, None).
+
+        :param detected_skeletons:  A list of detected skeletons.
+        :param gt_skeletons:        A list of ground truth skeletons.
+        :return:                    A list of matched ground truth and detected skeleton pairs.
+        """
+        matches = []             # type: List[Tuple[Skeleton3D, Optional[Skeleton3D]]]
+        used_detections = set()  # type: Set[int]
+
+        for i in range(len(gt_skeletons)):
+            gt_skeleton = gt_skeletons[i]  # type: Skeleton3D
+            smallest_distance = np.inf     # type: float
+            smallest_index = -1            # type: int
+
+            for j in range(len(detected_skeletons)):
+                detected_skeleton = detected_skeletons[j]  # type: Skeleton3D
+                distance = SkeletonUtil.calculate_distance_between_skeletons(
+                    gt_skeleton, detected_skeleton
+                )  # type: float
+                if distance < smallest_distance:
+                    smallest_distance = distance
+                    smallest_index = j
+
+            if smallest_index != -1 and smallest_index not in used_detections:
+                matches.append((gt_skeleton, detected_skeletons[smallest_index]))
+                used_detections.add(smallest_index)
+            else:
+                matches.append((gt_skeleton, None))
+
+        return matches
 
     @staticmethod
     def save_skeletons(filename: str, skeletons: List[Skeleton3D]) -> None:
