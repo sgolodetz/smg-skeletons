@@ -38,14 +38,14 @@ class PeopleMaskRenderer:
         if intrinsics is None:
             return np.zeros((height, width), dtype=np.uint8)
 
-        # If the OpenGL framebuffer hasn't been constructed yet, construct it now.
+        # If the OpenGL frame-buffer hasn't been constructed yet, construct it now.
         # FIXME: Support image size changes.
         if self.__framebuffer is None:
             self.__framebuffer = OpenGLFrameBuffer(width, height)
 
-        # Render a people mask based on the skeletons into the framebuffer.
+        # Render a people mask based on the skeletons into the frame-buffer.
         with self.__framebuffer:
-            # Set the viewport to encompass the whole framebuffer.
+            # Set the viewport to encompass the whole frame-buffer.
             OpenGLUtil.set_viewport((0.0, 0.0), (1.0, 1.0), (width, height))
 
             # Clear the background to black.
@@ -60,9 +60,9 @@ class PeopleMaskRenderer:
                 with OpenGLMatrixContext(GL_MODELVIEW, lambda: OpenGLUtil.load_matrix(
                     CameraPoseConverter.pose_to_modelview(np.linalg.inv(world_from_camera))
                 )):
-                    # Render the people mask into the framebuffer.
+                    # Render the people mask into the frame-buffer.
                     for skeleton in skeletons:
                         render_person_mask(skeleton)
 
-                    # Make a binary mask from the contents of the framebuffer, and return it.
+                    # Make a binary mask from the contents of the frame-buffer, and return it.
                     return OpenGLUtil.read_bgr_image(width, height)[:, :, 0]
